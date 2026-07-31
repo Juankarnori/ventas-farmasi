@@ -1,0 +1,86 @@
+import Link from "next/link";
+import { Plus, ShoppingBag, Settings2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { ProductCard } from "@/components/catalogo/product-card";
+import { CatalogoFilters } from "@/components/catalogo/catalogo-filters";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
+
+export default async function CatalogoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; categoria?: string }>;
+}) {
+  const { q, categoria } = await searchParams;
+  const supabase = await createClient();
+
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  let query = supabase.from("products").select("*").order("name", { ascending: true });
+  if (q) query = query.ilike("name", `%${q}%`);
+  if (categoria) query = query.eq("category_id", categoria);
+
+  const { data: products } = await query;
+
+  const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl text-ink">Catálogo</h1>
+          <p className="mt-1 text-sm text-ink/60">Productos Farmasi que vendés.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/catalogo/categorias"
+            className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm text-ink/60 hover:bg-ink/5 hover:text-ink"
+          >
+            <Settings2 className="h-4 w-4" /> Categorías
+          </Link>
+          <Link href="/catalogo/nuevo">
+            <Button>
+              <Plus className="h-4 w-4" /> Nuevo producto
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <CatalogoFilters categories={categories ?? []} />
+      </div>
+
+      {products && products.length > 0 ? (
+        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={{
+                ...product,
+                category: product.category_id
+                  ? (categoryById.get(product.category_id) ?? null)
+                  : null,
+              }}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-6">
+          <EmptyState
+            icon={ShoppingBag}
+            title="Todavía no hay productos"
+            description="Agregá el primero para empezar a armar el catálogo."
+            action={
+              <Link href="/catalogo/nuevo">
+                <Button size="sm">Nuevo producto</Button>
+              </Link>
+            }
+          />
+        </div>
+      )}
+    </div>
+  );
+}
