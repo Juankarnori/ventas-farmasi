@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "copiadora-web",
+      "name": "farmasi-bella",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "C:/JUANK/claude/copiadora-web", "run", "dev"],
+      "runtimeArgs": ["run", "dev"],
       "port": 3000
     }
   ]
