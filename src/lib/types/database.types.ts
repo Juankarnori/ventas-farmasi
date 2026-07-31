@@ -1,6 +1,10 @@
 // Tipos escritos a mano siguiendo supabase/migrations/*.sql. Si en algún
 // momento corrés `supabase gen types typescript`, este archivo se puede
 // reemplazar por el generado (misma forma: Database.public.Tables.*).
+//
+// `Relationships: []` en cada tabla y `Views: {}` son requeridos por el
+// tipo GenericSchema de @supabase/postgrest-js aunque no los usemos (no
+// modelamos joins embebidos tipados).
 
 export type ProfileSlot = "mama" | "yo";
 export type ProfileColor = "turquoise" | "coral";
@@ -28,6 +32,7 @@ export interface Database {
         };
         Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
         Update: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
+        Relationships: [];
       };
       categories: {
         Row: {
@@ -41,6 +46,7 @@ export interface Database {
           name: string;
         };
         Update: Partial<Database["public"]["Tables"]["categories"]["Row"]>;
+        Relationships: [];
       };
       products: {
         Row: {
@@ -61,6 +67,7 @@ export interface Database {
           name: string;
         };
         Update: Partial<Database["public"]["Tables"]["products"]["Row"]>;
+        Relationships: [];
       };
       stock_movements: {
         Row: {
@@ -80,6 +87,7 @@ export interface Database {
           quantity: number;
         };
         Update: Partial<Database["public"]["Tables"]["stock_movements"]["Row"]>;
+        Relationships: [];
       };
       orders: {
         Row: {
@@ -93,6 +101,7 @@ export interface Database {
         };
         Insert: Partial<Database["public"]["Tables"]["orders"]["Row"]>;
         Update: Partial<Database["public"]["Tables"]["orders"]["Row"]>;
+        Relationships: [];
       };
       order_items: {
         Row: {
@@ -109,6 +118,7 @@ export interface Database {
           unit_cost: number;
         };
         Update: Partial<Database["public"]["Tables"]["order_items"]["Row"]>;
+        Relationships: [];
       };
       sales: {
         Row: {
@@ -122,6 +132,7 @@ export interface Database {
           seller_profile_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["sales"]["Row"]>;
+        Relationships: [];
       };
       sale_items: {
         Row: {
@@ -141,6 +152,7 @@ export interface Database {
           cost_price: number;
         };
         Update: Partial<Database["public"]["Tables"]["sale_items"]["Row"]>;
+        Relationships: [];
       };
       loans: {
         Row: {
@@ -163,6 +175,7 @@ export interface Database {
           to_profile_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["loans"]["Row"]>;
+        Relationships: [];
       };
       expenses: {
         Row: {
@@ -179,8 +192,10 @@ export interface Database {
           amount: number;
         };
         Update: Partial<Database["public"]["Tables"]["expenses"]["Row"]>;
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
     Functions: {
       current_profile_id: {
         Args: Record<string, never>;
