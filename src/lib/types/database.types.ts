@@ -205,6 +205,13 @@ export interface Database {
         Args: { p_order_id: string };
         Returns: void;
       };
+      create_order: {
+        Args: {
+          p_order_date: string;
+          p_items: { product_id: string; quantity: number; unit_cost: number }[];
+        };
+        Returns: string;
+      };
       create_sale: {
         Args: {
           p_customer_name: string | null;
