@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "copiadora-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:/JUANK/claude/copiadora-web", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(gh api *)",
+      "WebFetch(domain:api.github.com)",
+      "WebSearch",
+      "Bash(node -e ' *)",
+      "Bash(npx next *)",
+      "Bash(npm -v)",
+      "Bash(npx --yes create-next-app@latest social-pulse --typescript --tailwind --app --eslint --src-dir --import-alias \"@/*\" --use-npm --no-turbopack)",
+      "Bash(mkdir -p \"C:/JUANK/claude/social-pulse/supabase/migrations\")",
+      "Bash(mkdir -p \"C:/JUANK/claude/social-pulse/src/lib/supabase\" \"C:/JUANK/claude/social-pulse/src/lib/meta\" \"C:/JUANK/claude/social-pulse/src/lib/platforms\" \"C:/JUANK/claude/social-pulse/src/types\" \"C:/JUANK/claude/social-pulse/src/components/ui\" \"C:/JUANK/claude/social-pulse/src/components/dashboard\")",
+      "Bash(mkdir -p \"C:/JUANK/claude/social-pulse/src/app/\\(auth\\)/login\" \"C:/JUANK/claude/social-pulse/src/app/\\(dashboard\\)/content/[contentId]\" \"C:/JUANK/claude/social-pulse/src/app/\\(dashboard\\)/recommendations\" \"C:/JUANK/claude/social-pulse/src/app/\\(dashboard\\)/settings/accounts/select\" \"C:/JUANK/claude/social-pulse/src/app/api/auth/meta/start\" \"C:/JUANK/claude/social-pulse/src/app/api/auth/callback/meta\" \"C:/JUANK/claude/social-pulse/src/app/api/sync\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/@supabase/supabase-js/package.json'\\).version\\)\")",
+      "Bash(xargs grep -l \"GenericSchema\")",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(Object.keys\\(j.routes||{}\\)\\);console.log\\(Object.keys\\(j.dynamicRoutes||{}\\)\\);}\\)\")",
+      "Bash(netstat -ano)",
+      "Bash(powershell -Command \"Get-Process -Id 24980 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path\")",
+      "Bash(wmic process *)",
+      "Bash(powershell -Command \"Stop-Process -Id 24980 -Force -ErrorAction SilentlyContinue\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3000/api/sync/accounts -H \"Authorization: Bearer test\" -w \"\\\\nHTTP:%{http_code}\\\\n\" -i)",
+      "Bash(curl -s -i http://localhost:3000/dashboard)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/settings/accounts)",
+      "Bash(dir supabase/migrations)",
+      "Bash(grep -c \"lg\\\\\\\\\\\\\\\\:static\" .next/static/chunks/*.css)",
+      "Bash(grep -c \"min-w-\\\\[720px\\\\]\\\\|min-w-\\\\\\\\\\\\\\\\\\\\[720px\\\\\\\\\\\\\\\\\\\\]\" .next/static/chunks/*.css)",
+      "Bash(grep -o \"\\\\.lg\\\\\\\\\\\\\\\\:[a-z-]*static[a-z-]*\" .next/static/chunks/*.css)",
+      "Bash(grep -o \".\\\\{0,20\\\\}static.\\\\{0,20\\\\}\" .next/static/chunks/1uq1k17cdyb_l.css)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(npx --yes create-next-app@latest . --ts --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --yes)"
+    ]
+  }
+}
