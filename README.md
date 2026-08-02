@@ -53,7 +53,7 @@ npx supabase db push
 
 ### Datos de ejemplo (opcional)
 
-Para probar la app con productos de ejemplo, corré también `supabase/seed.sql` en el SQL Editor. Los precios están en **pesos argentinos (ARS)** y son aproximados — ajustalos a tu lista real desde el Catálogo.
+Para probar la app con productos de ejemplo, corré también `supabase/seed.sql` en el SQL Editor. Los precios están en **dólares (USD)** y son aproximados — ajustalos a tu lista real desde el Catálogo.
 
 ### Bucket de imágenes
 
@@ -97,3 +97,4 @@ src/lib/                Clientes de Supabase, validaciones Zod, utils
 Incluido: catálogo, inventario, pedidos, ventas, préstamos, finanzas/dashboard (home), alertas de stock bajo y préstamos pendientes.
 
 Dejado afuera a propósito (se puede agregar después sin reestructurar nada): modo oscuro, y exportar reportes a Excel/PDF.
+# ventas-farmasi
