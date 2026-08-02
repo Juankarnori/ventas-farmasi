@@ -1,21 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbf3ef;
-  --primary: #0f6e68;
-  --accent: #f2637b;
-  --ink: #2b2320;
-  --gold: #c9a15a;
-  --sage: #8fa998;
+  /* Azul cielo & arena */
+  --background: #d6eaf8; /* fondo principal */
+  --background-tint: #eaf3fb; /* degradados y zonas iluminadas */
+  --panel: #bbdcf6; /* paneles, tarjetas y superficies satinadas (cards, modales, chips) */
+  --base: #e6dcc6; /* superficies base: sidebar, headers, pedestales */
+  --primary: #5f8fb8; /* títulos principales y marca */
+  --gold: #c8a66a; /* bordes y detalles finos */
+  --sage: #7daed3; /* íconos, líneas divisorias, marcos finos */
+  --ink: #3f3f3f; /* texto informativo / cuerpo */
+  --surface: #fffdf8; /* fondo de tarjetas / elementos destacados en blanco */
+  --accent: #d8c7a8; /* highlights, badges de estado, notificaciones */
+  --muted: #afa8a0; /* texto secundario / íconos apagados / estados inactivos */
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-background-tint: var(--background-tint);
+  --color-panel: var(--panel);
+  --color-base: var(--base);
   --color-primary: var(--primary);
   --color-accent: var(--accent);
   --color-ink: var(--ink);
   --color-gold: var(--gold);
   --color-sage: var(--sage);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
 
   --font-display: var(--font-fraunces);
   --font-sans: var(--font-manrope);
@@ -32,6 +43,6 @@ body {
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--background);
+  background: var(--panel);
+  color: var(--ink);
 }

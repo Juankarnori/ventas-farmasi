@@ -13,7 +13,7 @@ export function StatTile({
   tone?: "primary" | "accent" | "sage" | "gold";
 }) {
   return (
-    <div className="rounded-2xl border border-gold/20 bg-white/70 p-5">
+    <div className="rounded-2xl border border-gold/20 bg-panel/40 p-5">
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{label}</p>
         {Icon && (

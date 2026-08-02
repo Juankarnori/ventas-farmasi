@@ -37,16 +37,16 @@ export function IdentityPill({
       >
         <span
           className={cn(
-            "flex h-9 items-center px-3 text-xs font-semibold text-background",
-            isTurquoise ? "bg-primary" : "bg-accent/40",
+            "flex h-9 items-center px-3 text-xs font-semibold",
+            isTurquoise ? "bg-primary text-background" : "bg-gold/40 text-ink",
           )}
         >
           M
         </span>
         <span
           className={cn(
-            "flex h-9 items-center gap-1.5 px-3 text-xs font-semibold text-background",
-            isTurquoise ? "bg-primary/40" : "bg-accent",
+            "flex h-9 items-center gap-1.5 px-3 text-xs font-semibold",
+            isTurquoise ? "bg-primary/40 text-background" : "bg-gold text-ink",
           )}
         >
           Y
@@ -54,7 +54,7 @@ export function IdentityPill({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-11 z-20 w-48 rounded-xl border border-gold/20 bg-background p-2 shadow-lg">
+        <div className="absolute right-0 top-11 z-20 w-48 rounded-xl border border-gold/20 bg-surface p-2 shadow-lg">
           <p className="px-2 py-1.5 text-xs text-ink/50">
             Sesión de <span className="font-medium text-ink">{displayName}</span>
           </p>

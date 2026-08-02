@@ -9,7 +9,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 flex justify-around overflow-x-auto border-t border-gold/20 bg-background/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-10 flex justify-around overflow-x-auto border-t border-gold/20 bg-base/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden">
       {NAV_ITEMS.map((item) => {
         const active = pathname.startsWith(item.href);
         return (

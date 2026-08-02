@@ -1,7 +1,7 @@
-const formatter = new Intl.NumberFormat("es-AR", {
+const formatter = new Intl.NumberFormat("en-US", {
   style: "currency",
-  currency: "ARS",
-  minimumFractionDigits: 0,
+  currency: "USD",
+  minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 

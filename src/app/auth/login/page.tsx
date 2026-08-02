@@ -19,7 +19,7 @@ export default async function LoginPage({
       </div>
 
       {error && (
-        <p className="rounded-md bg-accent/10 px-3 py-2 text-sm text-accent">
+        <p className="rounded-md bg-accent/20 px-3 py-2 text-sm text-ink">
           No pudimos iniciar sesión. Probá de nuevo.
         </p>
       )}

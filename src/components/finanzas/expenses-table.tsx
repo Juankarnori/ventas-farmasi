@@ -48,7 +48,7 @@ export function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) {
                 <button
                   type="submit"
                   aria-label="Eliminar gasto"
-                  className="rounded-full p-1.5 text-ink/40 hover:bg-accent/10 hover:text-accent"
+                  className="rounded-full p-1.5 text-ink/40 hover:bg-accent/20 hover:text-ink"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

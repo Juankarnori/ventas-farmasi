@@ -3,10 +3,10 @@ import { cn } from "@/lib/utils/cn";
 type BadgeVariant = "sage" | "accent" | "gold" | "neutral";
 
 const variantClasses: Record<BadgeVariant, string> = {
-  sage: "bg-sage/15 text-sage",
-  accent: "bg-accent/15 text-accent",
-  gold: "bg-gold/15 text-gold",
-  neutral: "bg-ink/8 text-ink/70",
+  sage: "bg-sage/25 text-ink",
+  accent: "bg-accent/50 text-ink",
+  gold: "bg-gold/25 text-ink",
+  neutral: "bg-panel/50 text-ink/70",
 };
 
 export function Badge({

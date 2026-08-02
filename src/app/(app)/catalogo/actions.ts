@@ -117,3 +117,24 @@ export async function uploadProductImage(
 
   return { url: publicUrl };
 }
+
+export async function listProductImages(): Promise<{ name: string; url: string }[]> {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.storage.from("product-images").list("", {
+    limit: 200,
+    sortBy: { column: "created_at", order: "desc" },
+  });
+
+  if (error || !data) return [];
+
+  return data
+    .filter((file) => file.id)
+    .map((file) => {
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("product-images").getPublicUrl(file.name);
+      return { name: file.name, url: publicUrl };
+    });
+}

@@ -48,7 +48,7 @@ export default async function ClaimPage({
       </div>
 
       {error && (
-        <p className="rounded-md bg-accent/10 px-3 py-2 text-sm text-accent">
+        <p className="rounded-md bg-accent/20 px-3 py-2 text-sm text-ink">
           Ese perfil ya no está disponible. Probá con otro o pedí ayuda.
         </p>
       )}
@@ -58,10 +58,10 @@ export default async function ClaimPage({
           <form key={slot.id} action={claimProfile.bind(null, slot.id)}>
             <button
               type="submit"
-              className={`w-full rounded-full px-5 py-3 text-sm font-medium text-background transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
+              className={`w-full rounded-full px-5 py-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
                 slot.color === "turquoise"
-                  ? "bg-primary hover:bg-primary/90"
-                  : "bg-accent hover:bg-accent/90"
+                  ? "bg-primary text-background hover:bg-primary/90"
+                  : "bg-gold text-ink hover:bg-gold/90"
               }`}
             >
               {slot.display_name}

@@ -28,8 +28,8 @@ export function AlertsPanel({
       <div className="flex flex-col gap-4">
         {lowStockProducts.length > 0 && (
           <div>
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-accent">
-              <AlertTriangle className="h-4 w-4" /> Stock bajo
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink">
+              <AlertTriangle className="h-4 w-4 text-accent" /> Stock bajo
             </div>
             <ul className="flex flex-wrap gap-2">
               {lowStockProducts.map((p) => (
@@ -49,9 +49,9 @@ export function AlertsPanel({
           <div>
             <Link
               href="/prestamos"
-              className="flex items-center gap-2 text-sm font-medium text-gold hover:underline"
+              className="flex items-center gap-2 text-sm font-medium text-ink hover:underline"
             >
-              <HandCoins className="h-4 w-4" />
+              <HandCoins className="h-4 w-4 text-gold" />
               {pendingLoansCount} préstamo{pendingLoansCount === 1 ? "" : "s"} pendiente
               {pendingLoansCount === 1 ? "" : "s"} de devolver
             </Link>

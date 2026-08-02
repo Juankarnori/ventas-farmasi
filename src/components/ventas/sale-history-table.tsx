@@ -43,7 +43,7 @@ export function SaleHistoryTable({ rows }: { rows: SaleHistoryRow[] }) {
               <Td>{r.sellerName}</Td>
               <Td numeric>{r.quantity}</Td>
               <Td numeric>{formatCurrency(r.salePrice)}</Td>
-              <Td numeric className="pr-5 text-sage">
+              <Td numeric className="pr-5 font-semibold text-ink">
                 {formatCurrency(r.profit)}
               </Td>
             </Tr>
@@ -52,7 +52,7 @@ export function SaleHistoryTable({ rows }: { rows: SaleHistoryRow[] }) {
       </Table>
       <p className="border-t border-ink/10 px-5 py-3 text-right text-sm text-ink/60">
         Ganancia total:{" "}
-        <span className="font-mono text-base tabular-nums text-sage">
+        <span className="font-mono text-base tabular-nums text-ink">
           {formatCurrency(totalProfit)}
         </span>
       </p>

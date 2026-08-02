@@ -8,7 +8,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen flex-1">
-      <aside className="hidden w-60 flex-col gap-8 border-r border-gold/15 p-6 md:flex">
+      <aside className="hidden w-60 flex-col gap-8 border-r border-gold/15 bg-base p-6 md:flex">
         <span className="font-display text-xl text-primary">Farmasi Bella</span>
         <SidebarNav />
       </aside>

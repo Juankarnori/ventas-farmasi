@@ -32,7 +32,7 @@ export function Dialog({
       onClose={onClose}
       onCancel={onClose}
       className={cn(
-        "w-full max-w-md rounded-2xl border border-gold/20 bg-background p-0 shadow-lg backdrop:bg-ink/40",
+        "w-full max-w-md rounded-2xl border border-gold/20 bg-panel p-0 shadow-lg backdrop:bg-ink/40",
         className,
       )}
     >

@@ -27,7 +27,7 @@ export function TopProductsTable({ rows }: { rows: TopProductRow[] }) {
           <Tr key={r.productId}>
             <Td>{r.productName}</Td>
             <Td numeric>{r.quantity}</Td>
-            <Td numeric className="text-sage">
+            <Td numeric className="font-semibold text-ink">
               {formatCurrency(r.profit)}
             </Td>
           </Tr>

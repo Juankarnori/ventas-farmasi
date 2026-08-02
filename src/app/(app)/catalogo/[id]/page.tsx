@@ -44,7 +44,7 @@ export default async function EditarProductoPage({
         >
           <button
             type="submit"
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-accent hover:bg-accent/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-ink/60 hover:bg-accent/20 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
           >
             <Trash2 className="h-3.5 w-3.5" /> Eliminar
           </button>

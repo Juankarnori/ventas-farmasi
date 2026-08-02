@@ -32,16 +32,16 @@ export function SalesProfitChart({ data }: { data: DailyPoint[] }) {
     <div className="h-64">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-          <CartesianGrid stroke="#2B232014" vertical={false} />
+          <CartesianGrid stroke="#3F3F3F14" vertical={false} />
           <XAxis
             dataKey="date"
             tickFormatter={(d: string) => formatDate(d, "d/M")}
-            tick={{ fontSize: 11, fill: "#2B2320" }}
-            axisLine={{ stroke: "#2B232022" }}
+            tick={{ fontSize: 11, fill: "#3F3F3F" }}
+            axisLine={{ stroke: "#3F3F3F22" }}
             tickLine={false}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "#2B2320" }}
+            tick={{ fontSize: 11, fill: "#3F3F3F" }}
             axisLine={false}
             tickLine={false}
             width={48}
@@ -55,12 +55,12 @@ export function SalesProfitChart({ data }: { data: DailyPoint[] }) {
             labelFormatter={(d) => formatDate(String(d))}
             contentStyle={{
               borderRadius: 12,
-              border: "1px solid #C9A15A33",
+              border: "1px solid #C8A66A33",
               fontSize: 12,
             }}
           />
-          <Bar dataKey="ventas" fill="#0F6E68" radius={[4, 4, 0, 0]} maxBarSize={28} />
-          <Line type="monotone" dataKey="ganancia" stroke="#F2637B" strokeWidth={2} dot={false} />
+          <Bar dataKey="ventas" fill="#5F8FB8" radius={[4, 4, 0, 0]} maxBarSize={28} />
+          <Line type="monotone" dataKey="ganancia" stroke="#C8A66A" strokeWidth={2} dot={false} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>

@@ -111,14 +111,14 @@ export function SaleLineItems({ products }: { products: SellableProduct[] }) {
                 type="button"
                 onClick={() => removeRow(row.key)}
                 aria-label="Quitar producto"
-                className="rounded-full p-2 text-ink/40 hover:bg-accent/10 hover:text-accent"
+                className="rounded-full p-2 text-ink/40 hover:bg-accent/20 hover:text-ink"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
             {overStock && (
-              <p className="mt-2 flex items-center gap-1.5 text-xs text-accent">
-                <AlertTriangle className="h-3.5 w-3.5" /> Solo hay {product?.stock} en stock
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-ink">
+                <AlertTriangle className="h-3.5 w-3.5 text-accent" /> Solo hay {product?.stock} en stock
               </p>
             )}
           </div>

@@ -18,7 +18,7 @@ export const categorySchema = z.object({
   color: z
     .string()
     .trim()
-    .regex(/^#[0-9a-fA-F]{6}$/, "Tiene que ser un color hex, ej: #0F6E68"),
+    .regex(/^#[0-9a-fA-F]{6}$/, "Tiene que ser un color hex, ej: #5F8FB8"),
 });
 
 export type CategoryInput = z.infer<typeof categorySchema>;

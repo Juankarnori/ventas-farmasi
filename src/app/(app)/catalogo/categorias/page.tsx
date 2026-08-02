@@ -42,7 +42,7 @@ export default async function CategoriasPage() {
               id="color"
               name="color"
               type="color"
-              defaultValue="#0F6E68"
+              defaultValue="#5F8FB8"
               className="h-10 w-16 rounded-lg border border-ink/15 bg-white/80 p-1"
             />
           </div>
@@ -69,7 +69,7 @@ export default async function CategoriasPage() {
                 <button
                   type="submit"
                   aria-label={`Eliminar categoría ${category.name}`}
-                  className="rounded-full p-1.5 text-ink/40 hover:bg-accent/10 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+                  className="rounded-full p-1.5 text-ink/40 hover:bg-accent/20 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

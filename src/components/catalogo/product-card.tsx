@@ -19,11 +19,11 @@ export function ProductCard({ product }: { product: ProductCardData }) {
   return (
     <Link
       href={`/catalogo/${product.id}`}
-      className="group flex overflow-hidden rounded-2xl border border-gold/20 bg-white/70 shadow-sm transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+      className="group flex overflow-hidden rounded-2xl border border-gold/20 bg-panel/40 shadow-sm transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
     >
       <span
         className="w-1.5 shrink-0"
-        style={{ backgroundColor: product.category?.color ?? "#C9A15A" }}
+        style={{ backgroundColor: product.category?.color ?? "#C8A66A" }}
         aria-hidden
       />
       <div className="flex flex-1 flex-col">

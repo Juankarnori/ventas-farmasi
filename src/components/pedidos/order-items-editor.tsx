@@ -105,7 +105,7 @@ export function OrderItemsEditor({ products }: { products: OrderableProduct[] })
             type="button"
             onClick={() => removeRow(row.key)}
             aria-label="Quitar producto"
-            className="rounded-full p-2 text-ink/40 hover:bg-accent/10 hover:text-accent"
+            className="rounded-full p-2 text-ink/40 hover:bg-accent/20 hover:text-ink"
           >
             <Trash2 className="h-4 w-4" />
           </button>

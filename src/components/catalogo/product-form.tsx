@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { ImageOff, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, ChevronDown, ImageOff, Loader2, UploadCloud } from "lucide-react";
 import { Input, Textarea, Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { uploadProductImage } from "@/app/(app)/catalogo/actions";
+import { cn } from "@/lib/utils/cn";
+import { uploadProductImage, listProductImages } from "@/app/(app)/catalogo/actions";
 
 export interface ProductFormValues {
   name: string;
@@ -18,6 +19,14 @@ export interface ProductFormValues {
   image_url: string | null;
 }
 
+interface ExistingImage {
+  name: string;
+  url: string;
+}
+
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_BYTES = 5 * 1024 * 1024;
+
 export function ProductForm({
   categories,
   action,
@@ -29,23 +38,75 @@ export function ProductForm({
   defaultValues?: Partial<ProductFormValues>;
   submitLabel?: string;
 }) {
-  const [imageMode, setImageMode] = useState<"url" | "upload">("url");
+  const [imageMode, setImageMode] = useState<"existing" | "upload" | "url">("existing");
   const [imageUrl, setImageUrl] = useState(defaultValues?.image_url ?? "");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const [existingImages, setExistingImages] = useState<ExistingImage[]>([]);
+  const [loadingImages, setLoadingImages] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    listProductImages().then((imgs) => {
+      setExistingImages(imgs);
+      setLoadingImages(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  async function handleFile(file: File) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setUploadError("Formato no soportado (usá png, jpg o webp)");
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      setUploadError("La imagen pesa más de 5MB");
+      return;
+    }
+
     setUploading(true);
     setUploadError(null);
     const fd = new FormData();
     fd.set("file", file);
     const result = await uploadProductImage(fd);
     setUploading(false);
-    if (result.error) setUploadError(result.error);
-    else if (result.url) setImageUrl(result.url);
+
+    if (result.error) {
+      setUploadError(result.error);
+      return;
+    }
+    if (result.url) {
+      setImageUrl(result.url);
+      setExistingImages((imgs) => [{ name: file.name, url: result.url! }, ...imgs]);
+    }
   }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void handleFile(file);
+    e.target.value = "";
+  }
+
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) void handleFile(file);
+  }
+
+  const selectedExisting = existingImages.find((img) => img.url === imageUrl);
 
   return (
     <form action={action} className="flex flex-col gap-5">
@@ -56,45 +117,133 @@ export function ProductForm({
         <div className="mb-2 flex gap-4 text-xs text-ink/60">
           <button
             type="button"
-            onClick={() => setImageMode("url")}
-            className={imageMode === "url" ? "font-semibold text-primary" : ""}
+            onClick={() => setImageMode("existing")}
+            className={imageMode === "existing" ? "font-semibold text-primary" : ""}
           >
-            Pegar URL
+            Elegir existente
           </button>
           <button
             type="button"
             onClick={() => setImageMode("upload")}
             className={imageMode === "upload" ? "font-semibold text-primary" : ""}
           >
-            Subir archivo
+            Subir nueva
+          </button>
+          <button
+            type="button"
+            onClick={() => setImageMode("url")}
+            className={imageMode === "url" ? "font-semibold text-primary" : ""}
+          >
+            Pegar URL
           </button>
         </div>
 
-        {imageMode === "url" ? (
+        {imageMode === "existing" && (
+          <div ref={pickerRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setPickerOpen((v) => !v)}
+              aria-expanded={pickerOpen}
+              className="flex w-full items-center justify-between gap-2 rounded-lg border border-ink/15 bg-white/80 px-3 py-2 text-left text-sm text-ink focus-visible:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-gold"
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                {selectedExisting ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={selectedExisting.url}
+                      alt=""
+                      className="h-6 w-6 shrink-0 rounded object-cover"
+                    />
+                    <span className="truncate">{selectedExisting.name}</span>
+                  </>
+                ) : (
+                  <span className="truncate text-ink/40">
+                    {loadingImages
+                      ? "Cargando imágenes..."
+                      : existingImages.length === 0
+                        ? "Todavía no subiste ninguna imagen"
+                        : "Seleccioná una imagen ya subida"}
+                  </span>
+                )}
+              </span>
+              <ChevronDown className="h-4 w-4 shrink-0 text-ink/40" aria-hidden />
+            </button>
+
+            {pickerOpen && existingImages.length > 0 && (
+              <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-gold/20 bg-surface shadow-lg">
+                {existingImages.map((img) => (
+                  <button
+                    key={img.name}
+                    type="button"
+                    onClick={() => {
+                      setImageUrl(img.url);
+                      setPickerOpen(false);
+                    }}
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-panel/40"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img.url} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />
+                    <span className="truncate text-ink">{img.name}</span>
+                    {img.url === imageUrl && (
+                      <Check className="ml-auto h-4 w-4 shrink-0 text-primary" aria-hidden />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {imageMode === "upload" && (
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            className={cn(
+              "flex flex-col items-center gap-2 rounded-lg border-2 border-dashed p-4 text-center",
+              dragOver ? "border-primary bg-panel/30" : "border-ink/15",
+            )}
+          >
+            <UploadCloud className="h-5 w-5 text-ink/40" aria-hidden />
+            <p className="text-sm text-ink/60">
+              Arrastrá una imagen acá o{" "}
+              <label className="cursor-pointer font-medium text-primary hover:underline">
+                elegí un archivo
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+            </p>
+            <p className="text-xs text-ink/40">JPG, PNG o WEBP · máx. 5MB</p>
+            {uploading && <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden />}
+          </div>
+        )}
+
+        {imageMode === "url" && (
           <Input
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
             placeholder="https://..."
           />
-        ) : (
-          <div className="flex items-center gap-3">
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
-              onChange={handleFileChange}
-              className="text-sm text-ink/70"
-            />
-            {uploading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-          </div>
         )}
-        {uploadError && <p className="mt-1 text-xs text-accent">{uploadError}</p>}
 
-        <div className="mt-3 flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg bg-ink/5">
+        {uploadError && (
+          <p className="mt-2 rounded-md bg-accent/20 px-2 py-1 text-xs text-ink">{uploadError}</p>
+        )}
+
+        <div className="mt-3 flex h-40 w-40 items-center justify-center overflow-hidden rounded-lg bg-ink/5">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imageUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <ImageOff className="h-6 w-6 text-ink/20" />
+            <ImageOff className="h-8 w-8 text-ink/20" aria-hidden />
           )}
         </div>
       </div>
