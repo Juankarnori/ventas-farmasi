@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
-import { productSchema } from "@/lib/validations/product";
+import { productSchema, productVariantsSchema } from "@/lib/validations/product";
 
 function parseProductForm(formData: FormData) {
   const parsed = productSchema.safeParse({
@@ -14,7 +14,6 @@ function parseProductForm(formData: FormData) {
     sale_price: formData.get("sale_price"),
     cost_price: formData.get("cost_price"),
     description: formData.get("description"),
-    stock: formData.get("stock"),
     low_stock_threshold: formData.get("low_stock_threshold"),
     image_url: formData.get("image_url"),
   });
@@ -29,23 +28,57 @@ function parseProductForm(formData: FormData) {
     sale_price: parsed.data.sale_price,
     cost_price: parsed.data.cost_price,
     description: parsed.data.description || null,
-    stock: parsed.data.stock,
     low_stock_threshold: parsed.data.low_stock_threshold,
     image_url: parsed.data.image_url || null,
   };
+}
+
+function parseVariantsForm(formData: FormData) {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(String(formData.get("variants") ?? "[]"));
+  } catch {
+    throw new Error("Las variantes de color no son válidas");
+  }
+
+  const parsed = productVariantsSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Variantes inválidas");
+  }
+
+  return parsed.data;
 }
 
 export async function createProduct(formData: FormData) {
   const profile = await getSessionProfile();
   const supabase = await createClient();
   const values = parseProductForm(formData);
+  const variants = parseVariantsForm(formData);
 
-  const { error } = await supabase
+  const { data: product, error } = await supabase
     .from("products")
-    .insert({ ...values, created_by: profile.id });
+    .insert({ ...values, created_by: profile.id })
+    .select("id")
+    .single();
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  const { error: variantsError } = await supabase.from("product_variants").insert(
+    variants.map((v) => ({
+      product_id: product.id,
+      color_name: v.color_name,
+      color_hex: v.color_hex,
+      stock: v.stock,
+      price_override: v.price_override,
+      cost_override: v.cost_override,
+      image_url: v.image_url,
+    })),
+  );
+
+  if (variantsError) {
+    throw new Error(variantsError.message);
   }
 
   revalidatePath("/catalogo");
@@ -56,11 +89,74 @@ export async function updateProduct(productId: string, formData: FormData) {
   await getSessionProfile();
   const supabase = await createClient();
   const values = parseProductForm(formData);
+  const variants = parseVariantsForm(formData);
 
   const { error } = await supabase.from("products").update(values).eq("id", productId);
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  const { data: existing } = await supabase
+    .from("product_variants")
+    .select("id")
+    .eq("product_id", productId);
+
+  const existingIds = new Set((existing ?? []).map((v) => v.id));
+  const submittedIds = new Set(variants.filter((v) => v.id).map((v) => v.id as string));
+
+  const toUpdate = variants.filter((v) => v.id && existingIds.has(v.id));
+  const toInsert = variants.filter((v) => !v.id);
+  const toDeleteIds = [...existingIds].filter((id) => !submittedIds.has(id));
+
+  for (const v of toUpdate) {
+    const { error: updateError } = await supabase
+      .from("product_variants")
+      .update({
+        color_name: v.color_name,
+        color_hex: v.color_hex,
+        stock: v.stock,
+        price_override: v.price_override,
+        cost_override: v.cost_override,
+        image_url: v.image_url,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", v.id as string);
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+  }
+
+  if (toInsert.length > 0) {
+    const { error: insertError } = await supabase.from("product_variants").insert(
+      toInsert.map((v) => ({
+        product_id: productId,
+        color_name: v.color_name,
+        color_hex: v.color_hex,
+        stock: v.stock,
+        price_override: v.price_override,
+        cost_override: v.cost_override,
+        image_url: v.image_url,
+      })),
+    );
+
+    if (insertError) {
+      throw new Error(insertError.message);
+    }
+  }
+
+  if (toDeleteIds.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("product_variants")
+      .delete()
+      .in("id", toDeleteIds);
+
+    if (deleteError) {
+      throw new Error(
+        "No se pudo quitar una variante que ya tiene ventas, pedidos o préstamos registrados.",
+      );
+    }
   }
 
   revalidatePath("/catalogo");
@@ -74,7 +170,9 @@ export async function deleteProduct(productId: string) {
   const { error } = await supabase.from("products").delete().eq("id", productId);
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(
+      "No se pudo eliminar: alguna de sus variantes tiene ventas, pedidos o préstamos registrados.",
+    );
   }
 
   revalidatePath("/catalogo");

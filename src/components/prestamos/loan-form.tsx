@@ -1,16 +1,36 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import { Label, Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+
+export interface LoanableProduct {
+  id: string;
+  name: string;
+  variants: { id: string; color_name: string }[];
+}
 
 export function LoanForm({
   products,
   profiles,
   action,
 }: {
-  products: { id: string; name: string }[];
+  products: LoanableProduct[];
   profiles: { id: string; display_name: string }[];
   action: (formData: FormData) => void | Promise<void>;
 }) {
+  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const [productId, setProductId] = useState(products[0]?.id ?? "");
+  const [variantId, setVariantId] = useState(products[0]?.variants[0]?.id ?? "");
+
+  const selectedProduct = productById.get(productId);
+
+  function onProductChange(id: string) {
+    setProductId(id);
+    setVariantId(productById.get(id)?.variants[0]?.id ?? "");
+  }
+
   return (
     <form action={action} className="flex flex-col gap-5">
       <div>
@@ -30,10 +50,31 @@ export function LoanForm({
 
       <div>
         <Label htmlFor="product_id">Producto</Label>
-        <Select id="product_id" name="product_id" required>
+        <Select
+          id="product_id"
+          value={productId}
+          onChange={(e) => onProductChange(e.target.value)}
+        >
           {products.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="variant_id">Color</Label>
+        <Select
+          id="variant_id"
+          name="variant_id"
+          required
+          value={variantId}
+          onChange={(e) => setVariantId(e.target.value)}
+        >
+          {selectedProduct?.variants.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.color_name}
             </option>
           ))}
         </Select>

@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button";
 import { adjustStock } from "@/app/(app)/inventario/actions";
 
 export function AdjustStockDialog({
-  productId,
-  productName,
+  variantId,
+  label,
 }: {
-  productId: string;
-  productName: string;
+  variantId: string;
+  label: string;
 }) {
   const [open, setOpen] = useState(false);
-  const action = adjustStock.bind(null, productId);
+  const action = adjustStock.bind(null, variantId);
 
   return (
     <>
@@ -26,15 +26,15 @@ export function AdjustStockDialog({
       >
         <SlidersHorizontal className="h-3.5 w-3.5" /> Ajustar
       </button>
-      <Dialog open={open} onClose={() => setOpen(false)} title={`Ajustar stock — ${productName}`}>
+      <Dialog open={open} onClose={() => setOpen(false)} title={`Ajustar stock — ${label}`}>
         <form action={action} onSubmit={() => setOpen(false)} className="flex flex-col gap-4">
           <div>
-            <Label htmlFor={`delta-${productId}`}>Cantidad (positivo suma, negativo resta)</Label>
-            <Input id={`delta-${productId}`} name="delta" type="number" required placeholder="Ej: -2 o 5" />
+            <Label htmlFor={`delta-${variantId}`}>Cantidad (positivo suma, negativo resta)</Label>
+            <Input id={`delta-${variantId}`} name="delta" type="number" required placeholder="Ej: -2 o 5" />
           </div>
           <div>
-            <Label htmlFor={`note-${productId}`}>Motivo (opcional)</Label>
-            <Textarea id={`note-${productId}`} name="note" rows={2} placeholder="Ej: rotura, conteo físico..." />
+            <Label htmlFor={`note-${variantId}`}>Motivo (opcional)</Label>
+            <Textarea id={`note-${variantId}`} name="note" rows={2} placeholder="Ej: rotura, conteo físico..." />
           </div>
           <Button type="submit">Aplicar ajuste</Button>
         </form>

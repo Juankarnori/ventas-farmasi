@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
 
-export async function adjustStock(productId: string, formData: FormData) {
+export async function adjustStock(variantId: string, formData: FormData) {
   await getSessionProfile();
   const supabase = await createClient();
 
@@ -16,7 +16,7 @@ export async function adjustStock(productId: string, formData: FormData) {
   }
 
   const { error } = await supabase.rpc("adjust_stock", {
-    p_product_id: productId,
+    p_variant_id: variantId,
     p_delta: delta,
     p_note: note,
   });

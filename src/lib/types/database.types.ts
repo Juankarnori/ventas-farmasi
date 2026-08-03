@@ -69,10 +69,33 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["products"]["Row"]>;
         Relationships: [];
       };
+      product_variants: {
+        Row: {
+          id: string;
+          product_id: string;
+          color_name: string;
+          color_hex: string | null;
+          sku: string | null;
+          stock: number;
+          min_stock: number | null;
+          price_override: number | null;
+          cost_override: number | null;
+          image_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["product_variants"]["Row"]> & {
+          product_id: string;
+          color_name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["product_variants"]["Row"]>;
+        Relationships: [];
+      };
       stock_movements: {
         Row: {
           id: string;
           product_id: string;
+          variant_id: string;
           type: StockMovementType;
           quantity: number;
           reference_table: "orders" | "sales" | "loans" | null;
@@ -83,6 +106,7 @@ export interface Database {
         };
         Insert: Partial<Database["public"]["Tables"]["stock_movements"]["Row"]> & {
           product_id: string;
+          variant_id: string;
           type: StockMovementType;
           quantity: number;
         };
@@ -108,12 +132,14 @@ export interface Database {
           id: string;
           order_id: string;
           product_id: string;
+          variant_id: string;
           quantity: number;
           unit_cost: number;
         };
         Insert: Partial<Database["public"]["Tables"]["order_items"]["Row"]> & {
           order_id: string;
           product_id: string;
+          variant_id: string;
           quantity: number;
           unit_cost: number;
         };
@@ -139,6 +165,7 @@ export interface Database {
           id: string;
           sale_id: string;
           product_id: string;
+          variant_id: string;
           quantity: number;
           sale_price: number;
           cost_price: number;
@@ -147,6 +174,7 @@ export interface Database {
         Insert: Partial<Database["public"]["Tables"]["sale_items"]["Row"]> & {
           sale_id: string;
           product_id: string;
+          variant_id: string;
           quantity: number;
           sale_price: number;
           cost_price: number;
@@ -158,6 +186,7 @@ export interface Database {
         Row: {
           id: string;
           product_id: string;
+          variant_id: string;
           quantity: number;
           from_profile_id: string;
           to_profile_id: string;
@@ -170,6 +199,7 @@ export interface Database {
         };
         Insert: Partial<Database["public"]["Tables"]["loans"]["Row"]> & {
           product_id: string;
+          variant_id: string;
           quantity: number;
           from_profile_id: string;
           to_profile_id: string;
@@ -208,7 +238,7 @@ export interface Database {
       create_order: {
         Args: {
           p_order_date: string;
-          p_items: { product_id: string; quantity: number; unit_cost: number }[];
+          p_items: { variant_id: string; quantity: number; unit_cost: number }[];
         };
         Returns: string;
       };
@@ -216,17 +246,17 @@ export interface Database {
         Args: {
           p_customer_name: string | null;
           p_sale_date: string;
-          p_items: { product_id: string; quantity: number; sale_price: number }[];
+          p_items: { variant_id: string; quantity: number; sale_price: number }[];
         };
         Returns: string;
       };
       adjust_stock: {
-        Args: { p_product_id: string; p_delta: number; p_note: string | null };
+        Args: { p_variant_id: string; p_delta: number; p_note: string | null };
         Returns: void;
       };
       create_loan: {
         Args: {
-          p_product_id: string;
+          p_variant_id: string;
           p_quantity: number;
           p_from_profile_id: string;
           p_to_profile_id: string;

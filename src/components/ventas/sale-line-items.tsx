@@ -6,36 +6,53 @@ import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils/currency";
 
+export interface SellableVariant {
+  id: string;
+  color_name: string;
+  stock: number;
+  price_override: number | null;
+}
+
 export interface SellableProduct {
   id: string;
   name: string;
   sale_price: number;
-  stock: number;
+  variants: SellableVariant[];
 }
 
 interface Row {
   key: number;
   product_id: string;
+  variant_id: string;
   quantity: number;
   sale_price: number;
 }
 
+function effectivePrice(product: SellableProduct, variant: SellableVariant) {
+  return variant.price_override ?? product.sale_price;
+}
+
 export function SaleLineItems({ products }: { products: SellableProduct[] }) {
+  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+
+  function firstRowFor(product: SellableProduct): Omit<Row, "key"> {
+    const variant = product.variants[0];
+    return {
+      product_id: product.id,
+      variant_id: variant.id,
+      quantity: 1,
+      sale_price: effectivePrice(product, variant),
+    };
+  }
+
   const [rows, setRows] = useState<Row[]>(() =>
-    products.length > 0
-      ? [{ key: 0, product_id: products[0].id, quantity: 1, sale_price: products[0].sale_price }]
-      : [],
+    products.length > 0 ? [{ key: 0, ...firstRowFor(products[0]) }] : [],
   );
   const [nextKey, setNextKey] = useState(1);
 
-  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
-
   function addRow() {
     if (products.length === 0) return;
-    setRows((r) => [
-      ...r,
-      { key: nextKey, product_id: products[0].id, quantity: 1, sale_price: products[0].sale_price },
-    ]);
+    setRows((r) => [...r, { key: nextKey, ...firstRowFor(products[0]) }]);
     setNextKey((k) => k + 1);
   }
 
@@ -47,16 +64,34 @@ export function SaleLineItems({ products }: { products: SellableProduct[] }) {
     setRows((r) => r.map((row) => (row.key === key ? { ...row, ...patch } : row)));
   }
 
+  function onProductChange(key: number, productId: string) {
+    const product = productById.get(productId);
+    if (!product) return;
+    const variant = product.variants[0];
+    updateRow(key, {
+      product_id: productId,
+      variant_id: variant.id,
+      sale_price: effectivePrice(product, variant),
+    });
+  }
+
+  function onVariantChange(key: number, productId: string, variantId: string) {
+    const product = productById.get(productId);
+    const variant = product?.variants.find((v) => v.id === variantId);
+    if (!product || !variant) return;
+    updateRow(key, { variant_id: variantId, sale_price: effectivePrice(product, variant) });
+  }
+
   const total = rows.reduce((sum, r) => sum + r.quantity * r.sale_price, 0);
 
   const itemsJson = JSON.stringify(
     rows
-      .filter((r) => r.product_id && r.quantity > 0)
-      .map((r) => ({ product_id: r.product_id, quantity: r.quantity, sale_price: r.sale_price })),
+      .filter((r) => r.variant_id && r.quantity > 0)
+      .map((r) => ({ variant_id: r.variant_id, quantity: r.quantity, sale_price: r.sale_price })),
   );
 
   if (products.length === 0) {
-    return <p className="text-sm text-ink/60">No hay productos con stock disponible.</p>;
+    return <p className="text-sm text-ink/60">No hay productos con variantes disponibles.</p>;
   }
 
   return (
@@ -65,25 +100,34 @@ export function SaleLineItems({ products }: { products: SellableProduct[] }) {
 
       {rows.map((row) => {
         const product = productById.get(row.product_id);
-        const overStock = !!product && row.quantity > product.stock;
+        const variant = product?.variants.find((v) => v.id === row.variant_id);
+        const overStock = !!variant && row.quantity > variant.stock;
 
         return (
           <div key={row.key} className="rounded-lg border border-ink/10 p-3">
             <div className="flex flex-wrap items-end gap-2">
-              <div className="min-w-[180px] flex-1">
+              <div className="min-w-[160px] flex-1">
                 <Select
+                  aria-label="Producto"
                   value={row.product_id}
-                  onChange={(e) => {
-                    const p = productById.get(e.target.value);
-                    updateRow(row.key, {
-                      product_id: e.target.value,
-                      sale_price: p?.sale_price ?? row.sale_price,
-                    });
-                  }}
+                  onChange={(e) => onProductChange(row.key, e.target.value)}
                 >
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({p.stock} en stock)
+                      {p.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="min-w-[160px] flex-1">
+                <Select
+                  aria-label="Color"
+                  value={row.variant_id}
+                  onChange={(e) => onVariantChange(row.key, row.product_id, e.target.value)}
+                >
+                  {product?.variants.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.color_name} ({v.stock} en stock)
                     </option>
                   ))}
                 </Select>
@@ -118,7 +162,7 @@ export function SaleLineItems({ products }: { products: SellableProduct[] }) {
             </div>
             {overStock && (
               <p className="mt-2 flex items-center gap-1.5 text-xs text-ink">
-                <AlertTriangle className="h-3.5 w-3.5 text-accent" /> Solo hay {product?.stock} en stock
+                <AlertTriangle className="h-3.5 w-3.5 text-accent" /> Solo hay {variant?.stock} en stock
               </p>
             )}
           </div>

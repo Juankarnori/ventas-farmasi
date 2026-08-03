@@ -1,5 +1,6 @@
 import { Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils/date";
+import { variantLabel } from "@/lib/utils/variant-label";
 import type { StockMovementType } from "@/lib/types/database.types";
 
 const TYPE_LABELS: Record<StockMovementType, string> = {
@@ -23,6 +24,7 @@ export interface MovementRow {
   note: string | null;
   created_at: string;
   product: { name: string } | null;
+  variant: { color_name: string } | null;
 }
 
 export function MovementHistory({ movements }: { movements: MovementRow[] }) {
@@ -45,7 +47,9 @@ export function MovementHistory({ movements }: { movements: MovementRow[] }) {
         {movements.map((m) => (
           <Tr key={m.id}>
             <Td>{formatDate(m.created_at)}</Td>
-            <Td>{m.product?.name ?? "—"}</Td>
+            <Td>
+              {m.product && m.variant ? variantLabel(m.product.name, m.variant.color_name) : "—"}
+            </Td>
             <Td>{TYPE_LABELS[m.type]}</Td>
             <Td numeric>
               {TYPE_SIGN[m.type]}

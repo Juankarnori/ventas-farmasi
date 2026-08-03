@@ -25,6 +25,23 @@ export default async function CatalogoPage({
 
   const { data: products } = await query;
 
+  const productIds = (products ?? []).map((p) => p.id);
+  const { data: variants } =
+    productIds.length > 0
+      ? await supabase
+          .from("product_variants")
+          .select("id, product_id, color_name, color_hex")
+          .in("product_id", productIds)
+          .order("color_name", { ascending: true })
+      : { data: [] };
+
+  const variantsByProduct = new Map<string, { id: string; color_name: string; color_hex: string | null }[]>();
+  for (const v of variants ?? []) {
+    const list = variantsByProduct.get(v.product_id) ?? [];
+    list.push(v);
+    variantsByProduct.set(v.product_id, list);
+  }
+
   const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
 
   return (
@@ -63,6 +80,7 @@ export default async function CatalogoPage({
                 category: product.category_id
                   ? (categoryById.get(product.category_id) ?? null)
                   : null,
+                variants: variantsByProduct.get(product.id) ?? [],
               }}
             />
           ))}

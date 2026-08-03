@@ -7,6 +7,7 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { uploadProductImage, listProductImages } from "@/app/(app)/catalogo/actions";
+import { VariantsEditor, type VariantDefault } from "./variants-editor";
 
 export interface ProductFormValues {
   name: string;
@@ -14,7 +15,6 @@ export interface ProductFormValues {
   sale_price: number;
   cost_price: number;
   description: string | null;
-  stock: number;
   low_stock_threshold: number;
   image_url: string | null;
 }
@@ -31,11 +31,13 @@ export function ProductForm({
   categories,
   action,
   defaultValues,
+  defaultVariants,
   submitLabel = "Guardar",
 }: {
   categories: { id: string; name: string }[];
   action: (formData: FormData) => void | Promise<void>;
   defaultValues?: Partial<ProductFormValues>;
+  defaultVariants?: VariantDefault[];
   submitLabel?: string;
 }) {
   const [imageMode, setImageMode] = useState<"existing" | "upload" | "url">("existing");
@@ -296,29 +298,16 @@ export function ProductForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="stock">Stock actual</Label>
-          <Input
-            id="stock"
-            name="stock"
-            type="number"
-            min={0}
-            required
-            defaultValue={defaultValues?.stock ?? 0}
-          />
-        </div>
-        <div>
-          <Label htmlFor="low_stock_threshold">Stock mínimo</Label>
-          <Input
-            id="low_stock_threshold"
-            name="low_stock_threshold"
-            type="number"
-            min={0}
-            required
-            defaultValue={defaultValues?.low_stock_threshold ?? 3}
-          />
-        </div>
+      <div className="w-40">
+        <Label htmlFor="low_stock_threshold">Stock mínimo</Label>
+        <Input
+          id="low_stock_threshold"
+          name="low_stock_threshold"
+          type="number"
+          min={0}
+          required
+          defaultValue={defaultValues?.low_stock_threshold ?? 3}
+        />
       </div>
 
       <div>
@@ -330,6 +319,8 @@ export function ProductForm({
           defaultValue={defaultValues?.description ?? ""}
         />
       </div>
+
+      <VariantsEditor defaultVariants={defaultVariants} />
 
       <Button type="submit" disabled={uploading}>
         {submitLabel}

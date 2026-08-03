@@ -9,13 +9,13 @@ export async function createLoan(formData: FormData) {
   await getSessionProfile();
   const supabase = await createClient();
 
-  const productId = String(formData.get("product_id") ?? "");
+  const variantId = String(formData.get("variant_id") ?? "");
   const quantity = Number(formData.get("quantity"));
   const direction = String(formData.get("direction") ?? "");
   const note = String(formData.get("note") ?? "").trim() || null;
   const [fromProfileId, toProfileId] = direction.split(":");
 
-  if (!productId || !fromProfileId || !toProfileId) {
+  if (!variantId || !fromProfileId || !toProfileId) {
     throw new Error("Faltan datos del préstamo");
   }
 
@@ -24,7 +24,7 @@ export async function createLoan(formData: FormData) {
   }
 
   const { error } = await supabase.rpc("create_loan", {
-    p_product_id: productId,
+    p_variant_id: variantId,
     p_quantity: quantity,
     p_from_profile_id: fromProfileId,
     p_to_profile_id: toProfileId,

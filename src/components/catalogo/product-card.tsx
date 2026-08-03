@@ -11,6 +11,7 @@ export interface ProductCardData {
   stock: number;
   low_stock_threshold: number;
   category: { name: string; color: string } | null;
+  variants: { id: string; color_name: string; color_hex: string | null }[];
 }
 
 export function ProductCard({ product }: { product: ProductCardData }) {
@@ -45,6 +46,20 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             <Badge variant="neutral" className="w-fit">
               {product.category.name}
             </Badge>
+          )}
+          {product.variants.length > 1 && (
+            <div className="flex flex-wrap gap-1">
+              {product.variants.map((v) => (
+                <span
+                  key={v.id}
+                  title={v.color_name}
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-ink/15 text-[9px] font-semibold text-ink"
+                  style={v.color_hex ? { backgroundColor: v.color_hex } : undefined}
+                >
+                  {!v.color_hex && v.color_name.slice(0, 2).toUpperCase()}
+                </span>
+              ))}
+            </div>
           )}
           <div className="mt-auto flex items-center justify-between pt-1">
             <span className="font-mono text-sm tabular-nums text-ink">

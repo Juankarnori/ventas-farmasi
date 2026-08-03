@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { OrderStatusBadge } from "@/components/pedidos/order-status-badge";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
+import { variantLabel } from "@/lib/utils/variant-label";
 import { markOrderReceived } from "../actions";
 
 export default async function PedidoDetallePage({
@@ -18,10 +19,11 @@ export default async function PedidoDetallePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: order }, { data: items }, { data: products }] = await Promise.all([
+  const [{ data: order }, { data: items }, { data: products }, { data: variants }] = await Promise.all([
     supabase.from("orders").select("*").eq("id", id).maybeSingle(),
     supabase.from("order_items").select("*").eq("order_id", id),
     supabase.from("products").select("id, name"),
+    supabase.from("product_variants").select("id, color_name"),
   ]);
 
   if (!order) {
@@ -29,6 +31,7 @@ export default async function PedidoDetallePage({
   }
 
   const productById = new Map((products ?? []).map((p) => [p.id, p]));
+  const variantById = new Map((variants ?? []).map((v) => [v.id, v]));
   const markReceivedWithId = markOrderReceived.bind(null, id);
 
   return (
@@ -68,7 +71,13 @@ export default async function PedidoDetallePage({
           <Tbody>
             {items?.map((item) => (
               <Tr key={item.id}>
-                <Td className="pl-5">{productById.get(item.product_id)?.name ?? "—"}</Td>
+                <Td className="pl-5">
+                  {(() => {
+                    const productName = productById.get(item.product_id)?.name;
+                    const colorName = variantById.get(item.variant_id)?.color_name;
+                    return productName && colorName ? variantLabel(productName, colorName) : "—";
+                  })()}
+                </Td>
                 <Td numeric>{item.quantity}</Td>
                 <Td numeric className="pr-5">
                   {formatCurrency(item.unit_cost)}

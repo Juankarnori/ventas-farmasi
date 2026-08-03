@@ -13,9 +13,14 @@ export default async function EditarProductoPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: categories }, { data: product }] = await Promise.all([
+  const [{ data: categories }, { data: product }, { data: variants }] = await Promise.all([
     supabase.from("categories").select("*").order("sort_order", { ascending: true }),
     supabase.from("products").select("*").eq("id", id).maybeSingle(),
+    supabase
+      .from("product_variants")
+      .select("*")
+      .eq("product_id", id)
+      .order("color_name", { ascending: true }),
   ]);
 
   if (!product) {
@@ -51,7 +56,12 @@ export default async function EditarProductoPage({
         </form>
       </div>
 
-      <ProductForm categories={categories ?? []} action={updateProductWithId} defaultValues={product} />
+      <ProductForm
+        categories={categories ?? []}
+        action={updateProductWithId}
+        defaultValues={product}
+        defaultVariants={variants ?? []}
+      />
     </div>
   );
 }

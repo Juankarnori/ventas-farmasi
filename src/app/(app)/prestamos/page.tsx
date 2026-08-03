@@ -6,27 +6,36 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoanList, type LoanRow } from "@/components/prestamos/loan-list";
 import { SaldoNetoCard, type PendingLoanForBalance } from "@/components/prestamos/saldo-neto-card";
+import { variantLabel } from "@/lib/utils/variant-label";
 import type { ProfileSlot } from "@/lib/types/database.types";
 
 export default async function PrestamosPage() {
   const supabase = await createClient();
 
-  const [{ data: loans }, { data: products }, { data: profiles }] = await Promise.all([
+  const [{ data: loans }, { data: products }, { data: variants }, { data: profiles }] = await Promise.all([
     supabase.from("loans").select("*").order("loan_date", { ascending: false }),
     supabase.from("products").select("id, name"),
+    supabase.from("product_variants").select("id, color_name"),
     supabase.from("profiles").select("*"),
   ]);
 
   const productById = new Map((products ?? []).map((p) => [p.id, p]));
+  const variantById = new Map((variants ?? []).map((v) => [v.id, v]));
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
   const displayNames = {
     mama: profiles?.find((p) => p.slot === "mama")?.display_name ?? "Mamá",
     yo: profiles?.find((p) => p.slot === "yo")?.display_name ?? "Yo",
   } as Record<ProfileSlot, string>;
 
+  function labelFor(loan: { product_id: string; variant_id: string }) {
+    const productName = productById.get(loan.product_id)?.name ?? "—";
+    const colorName = variantById.get(loan.variant_id)?.color_name;
+    return colorName ? variantLabel(productName, colorName) : productName;
+  }
+
   const rows: LoanRow[] = (loans ?? []).map((loan) => ({
     id: loan.id,
-    productName: productById.get(loan.product_id)?.name ?? "—",
+    productName: labelFor(loan),
     quantity: loan.quantity,
     fromName: profileById.get(loan.from_profile_id)?.display_name ?? "—",
     toName: profileById.get(loan.to_profile_id)?.display_name ?? "—",
@@ -41,8 +50,8 @@ export default async function PrestamosPage() {
   const balanceInput: PendingLoanForBalance[] = (loans ?? [])
     .filter((l) => l.status === "pendiente")
     .map((l) => ({
-      productId: l.product_id,
-      productName: productById.get(l.product_id)?.name ?? "—",
+      variantId: l.variant_id,
+      label: labelFor(l),
       quantity: l.quantity,
       fromSlot: profileById.get(l.from_profile_id)?.slot ?? "mama",
       toSlot: profileById.get(l.to_profile_id)?.slot ?? "yo",

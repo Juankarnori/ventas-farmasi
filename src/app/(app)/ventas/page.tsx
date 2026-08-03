@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VentasFilters } from "@/components/ventas/ventas-filters";
 import { SaleHistoryTable, type SaleHistoryRow } from "@/components/ventas/sale-history-table";
+import { variantLabel } from "@/lib/utils/variant-label";
 
 export default async function VentasPage({
   searchParams,
@@ -35,20 +36,29 @@ export default async function VentasPage({
     if (producto) itemsQuery = itemsQuery.eq("product_id", producto);
     const { data: items } = await itemsQuery;
 
+    const variantIds = (items ?? []).map((i) => i.variant_id);
+    const { data: variants } =
+      variantIds.length > 0
+        ? await supabase.from("product_variants").select("id, color_name").in("id", variantIds)
+        : { data: [] };
+
     const saleById = new Map((sales ?? []).map((s) => [s.id, s]));
     const productById = new Map((products ?? []).map((p) => [p.id, p]));
     const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+    const variantById = new Map((variants ?? []).map((v) => [v.id, v]));
 
     rows = (items ?? [])
       .map((item) => {
         const sale = saleById.get(item.sale_id);
         if (!sale) return null;
+        const productName = productById.get(item.product_id)?.name ?? "—";
+        const colorName = variantById.get(item.variant_id)?.color_name;
         return {
           id: item.id,
           saleDate: sale.sale_date,
           customerName: sale.customer_name,
           sellerName: profileById.get(sale.seller_profile_id)?.display_name ?? "—",
-          productName: productById.get(item.product_id)?.name ?? "—",
+          productName: colorName ? variantLabel(productName, colorName) : productName,
           quantity: item.quantity,
           salePrice: item.sale_price,
           profit: item.profit,

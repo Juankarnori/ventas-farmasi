@@ -6,35 +6,52 @@ import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils/currency";
 
+export interface OrderableVariant {
+  id: string;
+  color_name: string;
+  cost_override: number | null;
+}
+
 export interface OrderableProduct {
   id: string;
   name: string;
   cost_price: number;
+  variants: OrderableVariant[];
 }
 
 interface Row {
   key: number;
   product_id: string;
+  variant_id: string;
   quantity: number;
   unit_cost: number;
 }
 
+function effectiveCost(product: OrderableProduct, variant: OrderableVariant) {
+  return variant.cost_override ?? product.cost_price;
+}
+
 export function OrderItemsEditor({ products }: { products: OrderableProduct[] }) {
+  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+
+  function firstRowFor(product: OrderableProduct): Omit<Row, "key"> {
+    const variant = product.variants[0];
+    return {
+      product_id: product.id,
+      variant_id: variant.id,
+      quantity: 1,
+      unit_cost: effectiveCost(product, variant),
+    };
+  }
+
   const [rows, setRows] = useState<Row[]>(() =>
-    products.length > 0
-      ? [{ key: 0, product_id: products[0].id, quantity: 1, unit_cost: products[0].cost_price }]
-      : [],
+    products.length > 0 ? [{ key: 0, ...firstRowFor(products[0]) }] : [],
   );
   const [nextKey, setNextKey] = useState(1);
 
-  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
-
   function addRow() {
     if (products.length === 0) return;
-    setRows((r) => [
-      ...r,
-      { key: nextKey, product_id: products[0].id, quantity: 1, unit_cost: products[0].cost_price },
-    ]);
+    setRows((r) => [...r, { key: nextKey, ...firstRowFor(products[0]) }]);
     setNextKey((k) => k + 1);
   }
 
@@ -46,12 +63,30 @@ export function OrderItemsEditor({ products }: { products: OrderableProduct[] })
     setRows((r) => r.map((row) => (row.key === key ? { ...row, ...patch } : row)));
   }
 
+  function onProductChange(key: number, productId: string) {
+    const product = productById.get(productId);
+    if (!product) return;
+    const variant = product.variants[0];
+    updateRow(key, {
+      product_id: productId,
+      variant_id: variant.id,
+      unit_cost: effectiveCost(product, variant),
+    });
+  }
+
+  function onVariantChange(key: number, productId: string, variantId: string) {
+    const product = productById.get(productId);
+    const variant = product?.variants.find((v) => v.id === variantId);
+    if (!product || !variant) return;
+    updateRow(key, { variant_id: variantId, unit_cost: effectiveCost(product, variant) });
+  }
+
   const total = rows.reduce((sum, r) => sum + r.quantity * r.unit_cost, 0);
 
   const itemsJson = JSON.stringify(
     rows
-      .filter((r) => r.product_id && r.quantity > 0)
-      .map((r) => ({ product_id: r.product_id, quantity: r.quantity, unit_cost: r.unit_cost })),
+      .filter((r) => r.variant_id && r.quantity > 0)
+      .map((r) => ({ variant_id: r.variant_id, quantity: r.quantity, unit_cost: r.unit_cost })),
   );
 
   if (products.length === 0) {
@@ -62,55 +97,67 @@ export function OrderItemsEditor({ products }: { products: OrderableProduct[] })
     <div className="flex flex-col gap-3">
       <input type="hidden" name="items" value={itemsJson} />
 
-      {rows.map((row) => (
-        <div key={row.key} className="flex flex-wrap items-end gap-2 rounded-lg border border-ink/10 p-3">
-          <div className="min-w-[180px] flex-1">
-            <Select
-              value={row.product_id}
-              onChange={(e) => {
-                const product = productById.get(e.target.value);
-                updateRow(row.key, {
-                  product_id: e.target.value,
-                  unit_cost: product?.cost_price ?? row.unit_cost,
-                });
-              }}
+      {rows.map((row) => {
+        const product = productById.get(row.product_id);
+
+        return (
+          <div key={row.key} className="flex flex-wrap items-end gap-2 rounded-lg border border-ink/10 p-3">
+            <div className="min-w-[160px] flex-1">
+              <Select
+                aria-label="Producto"
+                value={row.product_id}
+                onChange={(e) => onProductChange(row.key, e.target.value)}
+              >
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="min-w-[140px] flex-1">
+              <Select
+                aria-label="Color"
+                value={row.variant_id}
+                onChange={(e) => onVariantChange(row.key, row.product_id, e.target.value)}
+              >
+                {product?.variants.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.color_name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="w-24">
+              <Input
+                type="number"
+                min={1}
+                value={row.quantity}
+                onChange={(e) => updateRow(row.key, { quantity: Number(e.target.value) })}
+                aria-label="Cantidad"
+              />
+            </div>
+            <div className="w-32">
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={row.unit_cost}
+                onChange={(e) => updateRow(row.key, { unit_cost: Number(e.target.value) })}
+                aria-label="Costo unitario"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => removeRow(row.key)}
+              aria-label="Quitar producto"
+              className="rounded-full p-2 text-ink/40 hover:bg-accent/20 hover:text-ink"
             >
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </Select>
+              <Trash2 className="h-4 w-4" />
+            </button>
           </div>
-          <div className="w-24">
-            <Input
-              type="number"
-              min={1}
-              value={row.quantity}
-              onChange={(e) => updateRow(row.key, { quantity: Number(e.target.value) })}
-              aria-label="Cantidad"
-            />
-          </div>
-          <div className="w-32">
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              value={row.unit_cost}
-              onChange={(e) => updateRow(row.key, { unit_cost: Number(e.target.value) })}
-              aria-label="Costo unitario"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => removeRow(row.key)}
-            aria-label="Quitar producto"
-            className="rounded-full p-2 text-ink/40 hover:bg-accent/20 hover:text-ink"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
+        );
+      })}
 
       <button
         type="button"
