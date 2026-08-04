@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Input, Label } from "@/components/ui/input";
+import { StockStepper } from "@/components/ui/stock-stepper";
 
 export interface VariantDefault {
   id: string;
@@ -132,16 +133,16 @@ export function VariantsEditor({ defaultVariants }: { defaultVariants?: VariantD
                   placeholder="Único"
                 />
               </div>
-              <div className="w-28">
-                <Label htmlFor={`stock-${row.key}`}>
-                  {row.id ? "Tu stock" : "Tu stock inicial"}
-                </Label>
-                <Input
-                  id={`stock-${row.key}`}
-                  type="number"
-                  min={0}
+              <div>
+                <Label>{row.id ? "Tu stock" : "Tu stock inicial"}</Label>
+                <StockStepper
                   value={row.stock}
-                  onChange={(e) => updateRow(row.key, { stock: Number(e.target.value) })}
+                  onAdjust={async (delta) => {
+                    const next = row.stock + delta;
+                    if (next < 0) return { error: "No puede ser negativo" };
+                    updateRow(row.key, { stock: next });
+                    return {};
+                  }}
                 />
                 {row.otherStock !== undefined && (
                   <p className="mt-1 text-[11px] text-ink/50">

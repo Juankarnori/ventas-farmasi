@@ -1,8 +1,7 @@
 import { Fragment } from "react";
 import { Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/table";
-import { variantLabel } from "@/lib/utils/variant-label";
 import { LowStockBadge } from "./low-stock-badge";
-import { AdjustStockDialog } from "./adjust-stock-dialog";
+import { StockCell } from "./stock-cell";
 
 export interface StockGroup {
   productId: string;
@@ -22,17 +21,16 @@ export function StockTable({ groups, canAdjust = true }: { groups: StockGroup[];
       <Thead>
         <Tr>
           <Th>Color</Th>
-          <Th className="text-right">Stock</Th>
+          <Th>Stock</Th>
           <Th className="text-right">Mínimo</Th>
           <Th>Estado</Th>
-          <Th />
         </Tr>
       </Thead>
       <Tbody>
         {groups.map((group) => (
           <Fragment key={group.productId}>
             <Tr className="hover:bg-transparent">
-              <Td colSpan={5} className="bg-panel/30 font-semibold text-ink">
+              <Td colSpan={4} className="bg-panel/30 font-semibold text-ink">
                 {group.productName}
                 {group.category && (
                   <span className="ml-2 font-normal text-ink/50">{group.category.name}</span>
@@ -42,18 +40,12 @@ export function StockTable({ groups, canAdjust = true }: { groups: StockGroup[];
             {group.variants.map((v) => (
               <Tr key={v.id}>
                 <Td className="pl-6">{v.colorName}</Td>
-                <Td numeric>{v.stock}</Td>
+                <Td>
+                  <StockCell variantId={v.id} stock={v.stock} canAdjust={canAdjust} />
+                </Td>
                 <Td numeric>{v.threshold}</Td>
                 <Td>
                   <LowStockBadge stock={v.stock} threshold={v.threshold} />
-                </Td>
-                <Td>
-                  {canAdjust && (
-                    <AdjustStockDialog
-                      variantId={v.id}
-                      label={variantLabel(group.productName, v.colorName)}
-                    />
-                  )}
                 </Td>
               </Tr>
             ))}
