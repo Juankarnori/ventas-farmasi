@@ -16,7 +16,7 @@ export interface StockGroup {
   }[];
 }
 
-export function StockTable({ groups }: { groups: StockGroup[] }) {
+export function StockTable({ groups, canAdjust = true }: { groups: StockGroup[]; canAdjust?: boolean }) {
   return (
     <Table>
       <Thead>
@@ -48,10 +48,12 @@ export function StockTable({ groups }: { groups: StockGroup[] }) {
                   <LowStockBadge stock={v.stock} threshold={v.threshold} />
                 </Td>
                 <Td>
-                  <AdjustStockDialog
-                    variantId={v.id}
-                    label={variantLabel(group.productName, v.colorName)}
-                  />
+                  {canAdjust && (
+                    <AdjustStockDialog
+                      variantId={v.id}
+                      label={variantLabel(group.productName, v.colorName)}
+                    />
+                  )}
                 </Td>
               </Tr>
             ))}

@@ -7,6 +7,8 @@ import { ExpensesForm } from "@/components/finanzas/expenses-form";
 import { ExpensesTable } from "@/components/finanzas/expenses-table";
 import { AlertsPanel } from "@/components/finanzas/alerts-panel";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { computeNetDebt, type DebtEntry } from "@/lib/utils/loan-debt";
+import type { ProfileSlot } from "@/lib/types/database.types";
 
 export default async function FinanzasPage({
   searchParams,
@@ -88,6 +90,34 @@ export default async function FinanzasPage({
     .select("id", { count: "exact", head: true })
     .eq("status", "pendiente");
 
+  const { data: unsettledLoans } = await supabase
+    .from("loans")
+    .select("from_profile_id, to_profile_id, quantity, unit_cost")
+    .eq("status", "vendido")
+    .is("debt_settled_at", null);
+
+  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const displayNames = {
+    mama: profiles?.find((p) => p.slot === "mama")?.display_name ?? "Mamá",
+    yo: profiles?.find((p) => p.slot === "yo")?.display_name ?? "Yo",
+  } as Record<ProfileSlot, string>;
+
+  const debts: DebtEntry[] = (unsettledLoans ?? []).map((l) => ({
+    fromSlot: profileById.get(l.from_profile_id)?.slot ?? "mama",
+    toSlot: profileById.get(l.to_profile_id)?.slot ?? "yo",
+    amount: l.unit_cost * l.quantity,
+  }));
+
+  const netDebt = computeNetDebt(debts);
+  const debtMessage =
+    netDebt !== 0
+      ? {
+          debtorName: netDebt > 0 ? displayNames.yo : displayNames.mama,
+          creditorName: netDebt > 0 ? displayNames.mama : displayNames.yo,
+          amount: Math.abs(netDebt),
+        }
+      : null;
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -98,7 +128,11 @@ export default async function FinanzasPage({
         <DateRangeFilter profiles={profiles ?? []} />
       </div>
 
-      <AlertsPanel lowStockProducts={lowStockProducts} pendingLoansCount={pendingLoansCount ?? 0} />
+      <AlertsPanel
+        lowStockProducts={lowStockProducts}
+        pendingLoansCount={pendingLoansCount ?? 0}
+        debtMessage={debtMessage}
+      />
 
       <KpiGrid
         totalSales={totalSales}

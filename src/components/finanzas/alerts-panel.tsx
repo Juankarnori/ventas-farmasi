@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { AlertTriangle, HandCoins } from "lucide-react";
+import { AlertTriangle, HandCoins, Wallet } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/utils/currency";
 
 export interface LowStockItem {
   id: string;
@@ -12,11 +13,13 @@ export interface LowStockItem {
 export function AlertsPanel({
   lowStockProducts,
   pendingLoansCount,
+  debtMessage,
 }: {
   lowStockProducts: LowStockItem[];
   pendingLoansCount: number;
+  debtMessage?: { debtorName: string; creditorName: string; amount: number } | null;
 }) {
-  if (lowStockProducts.length === 0 && pendingLoansCount === 0) {
+  if (lowStockProducts.length === 0 && pendingLoansCount === 0 && !debtMessage) {
     return null;
   }
 
@@ -54,6 +57,19 @@ export function AlertsPanel({
               <HandCoins className="h-4 w-4 text-gold" />
               {pendingLoansCount} préstamo{pendingLoansCount === 1 ? "" : "s"} pendiente
               {pendingLoansCount === 1 ? "" : "s"} de devolver
+            </Link>
+          </div>
+        )}
+
+        {debtMessage && (
+          <div>
+            <Link
+              href="/prestamos"
+              className="flex items-center gap-2 text-sm font-medium text-ink hover:underline"
+            >
+              <Wallet className="h-4 w-4 text-gold" />
+              {debtMessage.debtorName} le debe a {debtMessage.creditorName}{" "}
+              {formatCurrency(debtMessage.amount)}
             </Link>
           </div>
         )}

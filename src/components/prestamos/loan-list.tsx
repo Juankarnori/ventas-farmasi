@@ -1,7 +1,8 @@
 import { Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/date";
-import { markLoanReturned } from "@/app/(app)/prestamos/actions";
+import { formatCurrency } from "@/lib/utils/currency";
+import { markLoanReturned, markLoanSold } from "@/app/(app)/prestamos/actions";
 
 export interface LoanRow {
   id: string;
@@ -11,8 +12,22 @@ export interface LoanRow {
   toName: string;
   loanDate: string;
   note: string | null;
-  status: "pendiente" | "devuelto";
+  status: "pendiente" | "devuelto" | "vendido";
+  debtAmount: number;
+  debtSettled: boolean;
 }
+
+const STATUS_LABEL: Record<LoanRow["status"], string> = {
+  pendiente: "Pendiente",
+  devuelto: "Devuelto",
+  vendido: "Vendido",
+};
+
+const STATUS_VARIANT: Record<LoanRow["status"], "gold" | "sage" | "accent"> = {
+  pendiente: "gold",
+  devuelto: "sage",
+  vendido: "accent",
+};
 
 export function LoanList({ loans }: { loans: LoanRow[] }) {
   if (loans.length === 0) {
@@ -41,20 +56,33 @@ export function LoanList({ loans }: { loans: LoanRow[] }) {
             </Td>
             <Td numeric>{loan.quantity}</Td>
             <Td>
-              <Badge variant={loan.status === "devuelto" ? "sage" : "gold"}>
-                {loan.status === "devuelto" ? "Devuelto" : "Pendiente"}
-              </Badge>
+              <Badge variant={STATUS_VARIANT[loan.status]}>{STATUS_LABEL[loan.status]}</Badge>
             </Td>
             <Td>
               {loan.status === "pendiente" && (
-                <form action={markLoanReturned.bind(null, loan.id)}>
-                  <button
-                    type="submit"
-                    className="rounded-full px-3 py-1.5 text-xs text-primary hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
-                  >
-                    Marcar devuelto
-                  </button>
-                </form>
+                <div className="flex gap-2">
+                  <form action={markLoanReturned.bind(null, loan.id)}>
+                    <button
+                      type="submit"
+                      className="rounded-full px-3 py-1.5 text-xs text-primary hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+                    >
+                      Marcar devuelto
+                    </button>
+                  </form>
+                  <form action={markLoanSold.bind(null, loan.id)}>
+                    <button
+                      type="submit"
+                      className="rounded-full px-3 py-1.5 text-xs text-ink/60 hover:bg-accent/20 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+                    >
+                      Marcar vendido
+                    </button>
+                  </form>
+                </div>
+              )}
+              {loan.status === "vendido" && (
+                <span className="text-xs text-ink/60">
+                  {loan.debtSettled ? "Deuda liquidada" : `Debe ${formatCurrency(loan.debtAmount)}`}
+                </span>
               )}
             </Td>
           </Tr>

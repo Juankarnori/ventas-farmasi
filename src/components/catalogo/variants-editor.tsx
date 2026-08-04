@@ -8,7 +8,9 @@ export interface VariantDefault {
   id: string;
   color_name: string;
   color_hex: string | null;
-  stock: number;
+  myStock: number;
+  otherStock: number;
+  otherName: string;
   price_override: number | null;
   cost_override: number | null;
   image_url: string | null;
@@ -21,6 +23,8 @@ interface VariantRow {
   useCustomColor: boolean;
   color_hex: string;
   stock: number;
+  otherStock?: number;
+  otherName?: string;
   useDifferentPrice: boolean;
   price_override: number;
   useDifferentCost: boolean;
@@ -54,7 +58,9 @@ function rowsFromDefaults(defaults?: VariantDefault[]): VariantRow[] {
     color_name: v.color_name,
     useCustomColor: !!v.color_hex,
     color_hex: v.color_hex ?? "#5F8FB8",
-    stock: v.stock,
+    stock: v.myStock,
+    otherStock: v.otherStock,
+    otherName: v.otherName,
     useDifferentPrice: v.price_override !== null,
     price_override: v.price_override ?? 0,
     useDifferentCost: v.cost_override !== null,
@@ -126,8 +132,10 @@ export function VariantsEditor({ defaultVariants }: { defaultVariants?: VariantD
                   placeholder="Único"
                 />
               </div>
-              <div className="w-24">
-                <Label htmlFor={`stock-${row.key}`}>Stock inicial</Label>
+              <div className="w-28">
+                <Label htmlFor={`stock-${row.key}`}>
+                  {row.id ? "Tu stock" : "Tu stock inicial"}
+                </Label>
                 <Input
                   id={`stock-${row.key}`}
                   type="number"
@@ -135,6 +143,11 @@ export function VariantsEditor({ defaultVariants }: { defaultVariants?: VariantD
                   value={row.stock}
                   onChange={(e) => updateRow(row.key, { stock: Number(e.target.value) })}
                 />
+                {row.otherStock !== undefined && (
+                  <p className="mt-1 text-[11px] text-ink/50">
+                    {row.otherName}: {row.otherStock} · Total: {row.stock + row.otherStock}
+                  </p>
+                )}
               </div>
               <label className="flex items-center gap-1.5 pb-2 text-xs text-ink/60">
                 <input

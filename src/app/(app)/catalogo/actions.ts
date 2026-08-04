@@ -65,20 +65,35 @@ export async function createProduct(formData: FormData) {
     throw new Error(error.message);
   }
 
-  const { error: variantsError } = await supabase.from("product_variants").insert(
-    variants.map((v) => ({
-      product_id: product.id,
-      color_name: v.color_name,
-      color_hex: v.color_hex,
-      stock: v.stock,
-      price_override: v.price_override,
-      cost_override: v.cost_override,
-      image_url: v.image_url,
-    })),
-  );
+  // El stock ahora es por usuaria (variant_stock): el que se carga acá
+  // en el formulario queda a nombre de quien está creando el producto.
+  for (const v of variants) {
+    const { data: variant, error: variantError } = await supabase
+      .from("product_variants")
+      .insert({
+        product_id: product.id,
+        color_name: v.color_name,
+        color_hex: v.color_hex,
+        price_override: v.price_override,
+        cost_override: v.cost_override,
+        image_url: v.image_url,
+      })
+      .select("id")
+      .single();
 
-  if (variantsError) {
-    throw new Error(variantsError.message);
+    if (variantError) {
+      throw new Error(variantError.message);
+    }
+
+    if (v.stock > 0) {
+      const { error: stockError } = await supabase
+        .from("variant_stock")
+        .insert({ variant_id: variant.id, profile_id: profile.id, stock: v.stock });
+
+      if (stockError) {
+        throw new Error(stockError.message);
+      }
+    }
   }
 
   revalidatePath("/catalogo");
@@ -86,7 +101,7 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(productId: string, formData: FormData) {
-  await getSessionProfile();
+  const profile = await getSessionProfile();
   const supabase = await createClient();
   const values = parseProductForm(formData);
   const variants = parseVariantsForm(formData);
@@ -109,13 +124,15 @@ export async function updateProduct(productId: string, formData: FormData) {
   const toInsert = variants.filter((v) => !v.id);
   const toDeleteIds = [...existingIds].filter((id) => !submittedIds.has(id));
 
+  // El stock del formulario es siempre "el mío": se guarda como
+  // variant_stock de quien está editando, nunca pisa el de la otra
+  // usuaria (esa fila ni se toca acá).
   for (const v of toUpdate) {
     const { error: updateError } = await supabase
       .from("product_variants")
       .update({
         color_name: v.color_name,
         color_hex: v.color_hex,
-        stock: v.stock,
         price_override: v.price_override,
         cost_override: v.cost_override,
         image_url: v.image_url,
@@ -126,23 +143,45 @@ export async function updateProduct(productId: string, formData: FormData) {
     if (updateError) {
       throw new Error(updateError.message);
     }
+
+    const { error: stockError } = await supabase
+      .from("variant_stock")
+      .upsert(
+        { variant_id: v.id as string, profile_id: profile.id, stock: v.stock },
+        { onConflict: "variant_id,profile_id" },
+      );
+
+    if (stockError) {
+      throw new Error(stockError.message);
+    }
   }
 
-  if (toInsert.length > 0) {
-    const { error: insertError } = await supabase.from("product_variants").insert(
-      toInsert.map((v) => ({
+  for (const v of toInsert) {
+    const { data: variant, error: insertError } = await supabase
+      .from("product_variants")
+      .insert({
         product_id: productId,
         color_name: v.color_name,
         color_hex: v.color_hex,
-        stock: v.stock,
         price_override: v.price_override,
         cost_override: v.cost_override,
         image_url: v.image_url,
-      })),
-    );
+      })
+      .select("id")
+      .single();
 
     if (insertError) {
       throw new Error(insertError.message);
+    }
+
+    if (v.stock > 0) {
+      const { error: stockError } = await supabase
+        .from("variant_stock")
+        .insert({ variant_id: variant.id, profile_id: profile.id, stock: v.stock });
+
+      if (stockError) {
+        throw new Error(stockError.message);
+      }
     }
   }
 

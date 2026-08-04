@@ -1,23 +1,32 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionProfile } from "@/lib/auth/get-session-profile";
 import { SaleForm } from "@/components/ventas/sale-form";
 import { createSale } from "../actions";
 
 export default async function NuevaVentaPage() {
+  const profile = await getSessionProfile();
   const supabase = await createClient();
-  const [{ data: products }, { data: variants }] = await Promise.all([
+  const [{ data: products }, { data: variants }, { data: myStock }] = await Promise.all([
     supabase.from("products").select("id, name, sale_price").order("name", { ascending: true }),
     supabase
       .from("product_variants")
-      .select("id, product_id, color_name, stock, price_override")
+      .select("id, product_id, color_name, price_override")
       .order("color_name", { ascending: true }),
+    supabase.from("variant_stock").select("variant_id, stock").eq("profile_id", profile.id),
   ]);
 
-  const variantsByProduct = new Map<string, typeof variants>();
-  for (const v of variants ?? []) {
+  const myStockByVariant = new Map((myStock ?? []).map((s) => [s.variant_id, s.stock]));
+  const variantsWithStock = (variants ?? []).map((v) => ({
+    ...v,
+    stock: myStockByVariant.get(v.id) ?? 0,
+  }));
+
+  const variantsByProduct = new Map<string, typeof variantsWithStock>();
+  for (const v of variantsWithStock) {
     const list = variantsByProduct.get(v.product_id) ?? [];
-    list!.push(v);
+    list.push(v);
     variantsByProduct.set(v.product_id, list);
   }
 

@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoanList, type LoanRow } from "@/components/prestamos/loan-list";
 import { SaldoNetoCard, type PendingLoanForBalance } from "@/components/prestamos/saldo-neto-card";
+import { MonetaryDebtCard } from "@/components/prestamos/monetary-debt-card";
 import { variantLabel } from "@/lib/utils/variant-label";
+import type { DebtEntry } from "@/lib/utils/loan-debt";
 import type { ProfileSlot } from "@/lib/types/database.types";
 
 export default async function PrestamosPage() {
@@ -42,10 +44,13 @@ export default async function PrestamosPage() {
     loanDate: loan.loan_date,
     note: loan.note,
     status: loan.status,
+    debtAmount: loan.unit_cost * loan.quantity,
+    debtSettled: loan.debt_settled_at !== null,
   }));
 
   const pending = rows.filter((r) => r.status === "pendiente");
   const returned = rows.filter((r) => r.status === "devuelto");
+  const sold = rows.filter((r) => r.status === "vendido");
 
   const balanceInput: PendingLoanForBalance[] = (loans ?? [])
     .filter((l) => l.status === "pendiente")
@@ -55,6 +60,14 @@ export default async function PrestamosPage() {
       quantity: l.quantity,
       fromSlot: profileById.get(l.from_profile_id)?.slot ?? "mama",
       toSlot: profileById.get(l.to_profile_id)?.slot ?? "yo",
+    }));
+
+  const debts: DebtEntry[] = (loans ?? [])
+    .filter((l) => l.status === "vendido" && l.debt_settled_at === null)
+    .map((l) => ({
+      fromSlot: profileById.get(l.from_profile_id)?.slot ?? "mama",
+      toSlot: profileById.get(l.to_profile_id)?.slot ?? "yo",
+      amount: l.unit_cost * l.quantity,
     }));
 
   return (
@@ -71,8 +84,9 @@ export default async function PrestamosPage() {
         </Link>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-col gap-4">
         <SaldoNetoCard loans={balanceInput} displayNames={displayNames} />
+        <MonetaryDebtCard debts={debts} displayNames={displayNames} />
       </div>
 
       <div className="mt-6">
@@ -94,6 +108,12 @@ export default async function PrestamosPage() {
                 <CardTitle>Pendientes</CardTitle>
               </CardHeader>
               <LoanList loans={pending} />
+            </Card>
+            <Card className="p-0">
+              <CardHeader className="px-5 pt-5">
+                <CardTitle>Vendidos</CardTitle>
+              </CardHeader>
+              <LoanList loans={sold} />
             </Card>
             <Card className="p-0">
               <CardHeader className="px-5 pt-5">

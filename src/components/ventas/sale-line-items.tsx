@@ -127,7 +127,7 @@ export function SaleLineItems({ products }: { products: SellableProduct[] }) {
                 >
                   {product?.variants.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.color_name} ({v.stock} en stock)
+                      {v.color_name} (tenés {v.stock})
                     </option>
                   ))}
                 </Select>
@@ -162,7 +162,8 @@ export function SaleLineItems({ products }: { products: SellableProduct[] }) {
             </div>
             {overStock && (
               <p className="mt-2 flex items-center gap-1.5 text-xs text-ink">
-                <AlertTriangle className="h-3.5 w-3.5 text-accent" /> Solo hay {variant?.stock} en stock
+                <AlertTriangle className="h-3.5 w-3.5 text-accent" /> Solo tenés {variant?.stock} de
+                stock propio de este color. ¿Es prestado? Registrá el préstamo primero.
               </p>
             )}
           </div>

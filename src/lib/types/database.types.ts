@@ -12,9 +12,13 @@ export type StockMovementType =
   | "entrada_pedido"
   | "salida_venta"
   | "ajuste_manual"
-  | "prestamo";
+  | "prestamo"
+  | "prestamo_salida"
+  | "prestamo_entrada"
+  | "devolucion_salida"
+  | "devolucion_entrada";
 export type OrderStatus = "pendiente" | "recibido";
-export type LoanStatus = "pendiente" | "devuelto";
+export type LoanStatus = "pendiente" | "devuelto" | "vendido";
 export type ExpenseCategory = "envio" | "empaque" | "publicidad" | "otro";
 
 export interface Database {
@@ -91,11 +95,26 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["product_variants"]["Row"]>;
         Relationships: [];
       };
+      variant_stock: {
+        Row: {
+          variant_id: string;
+          profile_id: string;
+          stock: number;
+          min_stock: number | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["variant_stock"]["Row"]> & {
+          variant_id: string;
+          profile_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["variant_stock"]["Row"]>;
+        Relationships: [];
+      };
       stock_movements: {
         Row: {
           id: string;
           product_id: string;
           variant_id: string;
+          profile_id: string;
           type: StockMovementType;
           quantity: number;
           reference_table: "orders" | "sales" | "loans" | null;
@@ -107,6 +126,7 @@ export interface Database {
         Insert: Partial<Database["public"]["Tables"]["stock_movements"]["Row"]> & {
           product_id: string;
           variant_id: string;
+          profile_id: string;
           type: StockMovementType;
           quantity: number;
         };
@@ -194,6 +214,8 @@ export interface Database {
           note: string | null;
           status: LoanStatus;
           returned_at: string | null;
+          unit_cost: number;
+          debt_settled_at: string | null;
           created_by: string | null;
           created_at: string;
         };
@@ -266,6 +288,14 @@ export interface Database {
       };
       mark_loan_returned: {
         Args: { p_loan_id: string };
+        Returns: void;
+      };
+      mark_loan_sold: {
+        Args: { p_loan_id: string };
+        Returns: void;
+      };
+      settle_loan_debts: {
+        Args: Record<string, never>;
         Returns: void;
       };
     };

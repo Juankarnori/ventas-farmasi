@@ -37,6 +37,7 @@ export async function createLoan(formData: FormData) {
 
   revalidatePath("/prestamos");
   revalidatePath("/inventario");
+  revalidatePath("/catalogo");
   redirect("/prestamos");
 }
 
@@ -51,4 +52,34 @@ export async function markLoanReturned(loanId: string) {
   }
 
   revalidatePath("/prestamos");
+  revalidatePath("/inventario");
+  revalidatePath("/catalogo");
+}
+
+export async function markLoanSold(loanId: string) {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("mark_loan_sold", { p_loan_id: loanId });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/prestamos");
+  revalidatePath("/finanzas");
+}
+
+export async function settleAllDebts() {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("settle_loan_debts");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/prestamos");
+  revalidatePath("/finanzas");
 }

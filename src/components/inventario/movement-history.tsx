@@ -8,6 +8,10 @@ const TYPE_LABELS: Record<StockMovementType, string> = {
   salida_venta: "Salida (venta)",
   ajuste_manual: "Ajuste manual",
   prestamo: "Préstamo",
+  prestamo_salida: "Préstamo (salida)",
+  prestamo_entrada: "Préstamo (entrada)",
+  devolucion_salida: "Devolución (salida)",
+  devolucion_entrada: "Devolución (entrada)",
 };
 
 const TYPE_SIGN: Record<StockMovementType, "+" | "-" | "·"> = {
@@ -15,6 +19,10 @@ const TYPE_SIGN: Record<StockMovementType, "+" | "-" | "·"> = {
   salida_venta: "-",
   ajuste_manual: "·",
   prestamo: "·",
+  prestamo_salida: "-",
+  prestamo_entrada: "+",
+  devolucion_salida: "-",
+  devolucion_entrada: "+",
 };
 
 export interface MovementRow {
@@ -25,6 +33,7 @@ export interface MovementRow {
   created_at: string;
   product: { name: string } | null;
   variant: { color_name: string } | null;
+  profile: { display_name: string } | null;
 }
 
 export function MovementHistory({ movements }: { movements: MovementRow[] }) {
@@ -38,6 +47,7 @@ export function MovementHistory({ movements }: { movements: MovementRow[] }) {
         <Tr>
           <Th>Fecha</Th>
           <Th>Producto</Th>
+          <Th>Usuaria</Th>
           <Th>Tipo</Th>
           <Th className="text-right">Cantidad</Th>
           <Th>Nota</Th>
@@ -50,6 +60,7 @@ export function MovementHistory({ movements }: { movements: MovementRow[] }) {
             <Td>
               {m.product && m.variant ? variantLabel(m.product.name, m.variant.color_name) : "—"}
             </Td>
+            <Td className="text-ink/60">{m.profile?.display_name ?? "—"}</Td>
             <Td>{TYPE_LABELS[m.type]}</Td>
             <Td numeric>
               {TYPE_SIGN[m.type]}
