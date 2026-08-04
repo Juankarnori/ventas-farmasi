@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, HandCoins, Wallet } from "lucide-react";
+import { AlertTriangle, HandCoins, Wallet, Banknote, PackageOpen } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -14,12 +14,22 @@ export function AlertsPanel({
   lowStockProducts,
   pendingLoansCount,
   debtMessage,
+  accountsReceivable = 0,
+  undeliveredCount = 0,
 }: {
   lowStockProducts: LowStockItem[];
   pendingLoansCount: number;
   debtMessage?: { debtorName: string; creditorName: string; amount: number } | null;
+  accountsReceivable?: number;
+  undeliveredCount?: number;
 }) {
-  if (lowStockProducts.length === 0 && pendingLoansCount === 0 && !debtMessage) {
+  if (
+    lowStockProducts.length === 0 &&
+    pendingLoansCount === 0 &&
+    !debtMessage &&
+    accountsReceivable === 0 &&
+    undeliveredCount === 0
+  ) {
     return null;
   }
 
@@ -70,6 +80,32 @@ export function AlertsPanel({
               <Wallet className="h-4 w-4 text-gold" />
               {debtMessage.debtorName} le debe a {debtMessage.creditorName}{" "}
               {formatCurrency(debtMessage.amount)}
+            </Link>
+          </div>
+        )}
+
+        {accountsReceivable > 0 && (
+          <div>
+            <Link
+              href="/ventas/apartados"
+              className="flex items-center gap-2 text-sm font-medium text-ink hover:underline"
+            >
+              <Banknote className="h-4 w-4 text-gold" />
+              Cuentas por cobrar: {formatCurrency(accountsReceivable)} en apartados con saldo
+              pendiente
+            </Link>
+          </div>
+        )}
+
+        {undeliveredCount > 0 && (
+          <div>
+            <Link
+              href="/ventas/apartados"
+              className="flex items-center gap-2 text-sm font-medium text-ink hover:underline"
+            >
+              <PackageOpen className="h-4 w-4 text-gold" />
+              {undeliveredCount} producto{undeliveredCount === 1 ? "" : "s"} pendiente
+              {undeliveredCount === 1 ? "" : "s"} de entregar
             </Link>
           </div>
         )}

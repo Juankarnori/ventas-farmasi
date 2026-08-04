@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
 import { SaleForm } from "@/components/ventas/sale-form";
-import { createSale } from "../actions";
+import { createSale, createApartado } from "../actions";
 
 export default async function NuevaVentaPage() {
   const profile = await getSessionProfile();
@@ -43,7 +43,7 @@ export default async function NuevaVentaPage() {
         <ArrowLeft className="h-4 w-4" /> Volver a ventas
       </Link>
       <h1 className="mb-6 font-display text-2xl text-ink">Nueva venta</h1>
-      <SaleForm products={sellableProducts} action={createSale} />
+      <SaleForm products={sellableProducts} saleAction={createSale} apartadoAction={createApartado} />
     </div>
   );
 }

@@ -449,3 +449,6 @@ begin
   where status = 'vendido' and debt_settled_at is null;
 end;
 $$;
+
+grant execute on function mark_loan_sold(uuid) to authenticated;
+grant execute on function settle_loan_debts() to authenticated;

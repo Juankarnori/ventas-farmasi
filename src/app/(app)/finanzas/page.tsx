@@ -23,7 +23,7 @@ export default async function FinanzasPage({
     supabase.from("products").select("id, name, stock, low_stock_threshold"),
   ]);
 
-  let salesQuery = supabase.from("sales").select("*");
+  let salesQuery = supabase.from("sales").select("*").in("payment_status", ["pagado", "completado"]);
   if (desde) salesQuery = salesQuery.gte("sale_date", desde);
   if (hasta) salesQuery = salesQuery.lte("sale_date", hasta);
   if (usuaria) salesQuery = salesQuery.eq("seller_profile_id", usuaria);
@@ -118,6 +118,24 @@ export default async function FinanzasPage({
         }
       : null;
 
+  const { data: openApartados } = await supabase
+    .from("sales")
+    .select("id")
+    .eq("payment_status", "con_abonos");
+
+  const openApartadoIds = (openApartados ?? []).map((s) => s.id);
+  const { data: openBalances } =
+    openApartadoIds.length > 0
+      ? await supabase.from("sale_balances").select("balance").in("sale_id", openApartadoIds)
+      : { data: [] };
+
+  const accountsReceivable = (openBalances ?? []).reduce((sum, b) => sum + b.balance, 0);
+
+  const { count: undeliveredCount } = await supabase
+    .from("sale_items")
+    .select("id", { count: "exact", head: true })
+    .eq("delivered", false);
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -132,6 +150,8 @@ export default async function FinanzasPage({
         lowStockProducts={lowStockProducts}
         pendingLoansCount={pendingLoansCount ?? 0}
         debtMessage={debtMessage}
+        accountsReceivable={accountsReceivable}
+        undeliveredCount={undeliveredCount ?? 0}
       />
 
       <KpiGrid

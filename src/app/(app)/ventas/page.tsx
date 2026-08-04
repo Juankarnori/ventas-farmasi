@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VentasFilters } from "@/components/ventas/ventas-filters";
 import { SaleHistoryTable, type SaleHistoryRow } from "@/components/ventas/sale-history-table";
+import { VentasTabs } from "@/components/ventas/ventas-tabs";
 import { variantLabel } from "@/lib/utils/variant-label";
 
 export default async function VentasPage({
@@ -21,7 +22,11 @@ export default async function VentasPage({
     supabase.from("products").select("id, name"),
   ]);
 
-  let salesQuery = supabase.from("sales").select("*").order("sale_date", { ascending: false });
+  let salesQuery = supabase
+    .from("sales")
+    .select("*")
+    .in("payment_status", ["pagado", "completado"])
+    .order("sale_date", { ascending: false });
   if (desde) salesQuery = salesQuery.gte("sale_date", desde);
   if (hasta) salesQuery = salesQuery.lte("sale_date", hasta);
   if (usuaria) salesQuery = salesQuery.eq("seller_profile_id", usuaria);
@@ -80,6 +85,10 @@ export default async function VentasPage({
             <Plus className="h-4 w-4" /> Nueva venta
           </Button>
         </Link>
+      </div>
+
+      <div className="mt-4">
+        <VentasTabs active="ventas" />
       </div>
 
       <div className="mt-6">

@@ -20,6 +20,7 @@ export type StockMovementType =
 export type OrderStatus = "pendiente" | "recibido";
 export type LoanStatus = "pendiente" | "devuelto" | "vendido";
 export type ExpenseCategory = "envio" | "empaque" | "publicidad" | "otro";
+export type PaymentStatus = "pagado" | "con_abonos" | "completado" | "cancelado";
 
 export interface Database {
   public: {
@@ -171,7 +172,10 @@ export interface Database {
           id: string;
           sale_date: string;
           customer_name: string | null;
+          customer_phone: string | null;
           seller_profile_id: string;
+          payment_status: PaymentStatus;
+          total_price: number;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["sales"]["Row"]> & {
@@ -190,6 +194,7 @@ export interface Database {
           sale_price: number;
           cost_price: number;
           profit: number;
+          delivered: boolean;
         };
         Insert: Partial<Database["public"]["Tables"]["sale_items"]["Row"]> & {
           sale_id: string;
@@ -200,6 +205,25 @@ export interface Database {
           cost_price: number;
         };
         Update: Partial<Database["public"]["Tables"]["sale_items"]["Row"]>;
+        Relationships: [];
+      };
+      sale_payments: {
+        Row: {
+          id: string;
+          sale_id: string;
+          amount: number;
+          payment_date: string;
+          method: string | null;
+          profile_id: string;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["sale_payments"]["Row"]> & {
+          sale_id: string;
+          amount: number;
+          profile_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["sale_payments"]["Row"]>;
         Relationships: [];
       };
       loans: {
@@ -247,7 +271,17 @@ export interface Database {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      sale_balances: {
+        Row: {
+          sale_id: string;
+          total_price: number;
+          amount_paid: number;
+          balance: number;
+        };
+        Relationships: [];
+      };
+    };
     Functions: {
       current_profile_id: {
         Args: Record<string, never>;
@@ -296,6 +330,33 @@ export interface Database {
       };
       settle_loan_debts: {
         Args: Record<string, never>;
+        Returns: void;
+      };
+      create_apartado: {
+        Args: {
+          p_customer_name: string;
+          p_customer_phone: string | null;
+          p_sale_date: string;
+          p_items: { variant_id: string; quantity: number; sale_price: number }[];
+        };
+        Returns: string;
+      };
+      register_payment: {
+        Args: {
+          p_sale_id: string;
+          p_amount: number;
+          p_payment_date: string;
+          p_method: string | null;
+          p_note: string | null;
+        };
+        Returns: void;
+      };
+      mark_item_delivered: {
+        Args: { p_sale_item_id: string };
+        Returns: void;
+      };
+      cancel_apartado: {
+        Args: { p_sale_id: string };
         Returns: void;
       };
     };
