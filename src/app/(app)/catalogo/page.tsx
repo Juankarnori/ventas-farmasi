@@ -9,19 +9,20 @@ import { Button } from "@/components/ui/button";
 export default async function CatalogoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; categoria?: string }>;
+  searchParams: Promise<{ q?: string; categoria?: string; linea?: string }>;
 }) {
-  const { q, categoria } = await searchParams;
+  const { q, categoria, linea } = await searchParams;
   const supabase = await createClient();
 
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("*")
-    .order("sort_order", { ascending: true });
+  const [{ data: categories }, { data: lines }] = await Promise.all([
+    supabase.from("categories").select("*").order("sort_order", { ascending: true }),
+    supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),
+  ]);
 
   let query = supabase.from("products").select("*").order("name", { ascending: true });
   if (q) query = query.ilike("name", `%${q}%`);
   if (categoria) query = query.eq("category_id", categoria);
+  if (linea) query = query.eq("line_id", linea);
 
   const { data: products } = await query;
 
@@ -43,6 +44,7 @@ export default async function CatalogoPage({
   }
 
   const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
+  const lineById = new Map((lines ?? []).map((l) => [l.id, l]));
 
   return (
     <div>
@@ -67,7 +69,7 @@ export default async function CatalogoPage({
       </div>
 
       <div className="mt-6">
-        <CatalogoFilters categories={categories ?? []} />
+        <CatalogoFilters categories={categories ?? []} lines={lines ?? []} />
       </div>
 
       {products && products.length > 0 ? (
@@ -80,6 +82,7 @@ export default async function CatalogoPage({
                 category: product.category_id
                   ? (categoryById.get(product.category_id) ?? null)
                   : null,
+                line: product.line_id ? (lineById.get(product.line_id) ?? null) : null,
                 variants: variantsByProduct.get(product.id) ?? [],
               }}
             />

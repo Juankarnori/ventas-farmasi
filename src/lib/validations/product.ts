@@ -3,6 +3,7 @@ import { z } from "zod";
 export const productSchema = z.object({
   name: z.string().trim().min(2, "El nombre es muy corto"),
   category_id: z.string().uuid().optional().or(z.literal("")),
+  line_id: z.string().uuid().optional().or(z.literal("")),
   sale_price: z.coerce.number().min(0, "No puede ser negativo"),
   cost_price: z.coerce.number().min(0, "No puede ser negativo"),
   description: z.string().trim().optional().or(z.literal("")),
@@ -47,3 +48,10 @@ export const categorySchema = z.object({
 });
 
 export type CategoryInput = z.infer<typeof categorySchema>;
+
+export const lineSchema = z.object({
+  category_id: z.string().uuid("Elegí una categoría"),
+  name: z.string().trim().min(2, "El nombre es muy corto"),
+});
+
+export type LineInput = z.infer<typeof lineSchema>;

@@ -11,6 +11,7 @@ export interface ProductCardData {
   stock: number;
   low_stock_threshold: number;
   category: { name: string; color: string } | null;
+  line: { name: string } | null;
   variants: { id: string; color_name: string; color_hex: string | null }[];
 }
 
@@ -45,6 +46,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
           {product.category && (
             <Badge variant="neutral" className="w-fit">
               {product.category.name}
+              {product.line && ` · ${product.line.name}`}
             </Badge>
           )}
           {product.variants.length > 1 && (

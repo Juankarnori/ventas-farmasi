@@ -3,15 +3,24 @@ import { ArrowLeft, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { createCategory, deleteCategory } from "./actions";
+import { LineRow } from "@/components/catalogo/line-row";
+import { createCategory, deleteCategory, createLine } from "./actions";
 
 export default async function CategoriasPage() {
   const supabase = await createClient();
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("*")
-    .order("sort_order", { ascending: true });
+  const [{ data: categories }, { data: lines }] = await Promise.all([
+    supabase.from("categories").select("*").order("sort_order", { ascending: true }),
+    supabase.from("product_lines").select("*").order("name", { ascending: true }),
+  ]);
+
+  const linesByCategory = new Map<string, typeof lines>();
+  for (const line of lines ?? []) {
+    const list = linesByCategory.get(line.category_id) ?? [];
+    list!.push(line);
+    linesByCategory.set(line.category_id, list);
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -80,6 +89,76 @@ export default async function CategoriasPage() {
             <li className="py-6 text-center text-sm text-ink/50">Todavía no hay categorías.</li>
           )}
         </ul>
+      </Card>
+
+      <h2 className="mt-8 font-display text-xl text-ink">Líneas</h2>
+      <p className="mt-1 text-sm text-ink/60">
+        Subcategorías dentro de cada categoría (ej. dentro de “Skincare”: “Tea Tree”, “Resurface”).
+      </p>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Nueva línea</CardTitle>
+        </CardHeader>
+        {categories && categories.length > 0 ? (
+          <form action={createLine} className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[160px]">
+              <Label htmlFor="line-name">Nombre</Label>
+              <Input id="line-name" name="name" placeholder="Ej: Tea Tree" required />
+            </div>
+            <div className="w-44">
+              <Label htmlFor="line-category">Categoría</Label>
+              <Select id="line-category" name="category_id" required>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <Button type="submit">Agregar</Button>
+          </form>
+        ) : (
+          <p className="text-sm text-ink/50">Creá al menos una categoría antes de agregar líneas.</p>
+        )}
+      </Card>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Existentes</CardTitle>
+        </CardHeader>
+        {categories && categories.length > 0 ? (
+          <div className="flex flex-col gap-5">
+            {categories.map((category) => {
+              const categoryLines = linesByCategory.get(category.id) ?? [];
+              return (
+                <div key={category.id}>
+                  <div className="mb-1 flex items-center gap-2">
+                    <span
+                      className="h-3 w-3 rounded-full"
+                      style={{ backgroundColor: category.color }}
+                      aria-hidden
+                    />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-ink/50">
+                      {category.name}
+                    </span>
+                  </div>
+                  {categoryLines.length > 0 ? (
+                    <ul className="divide-y divide-ink/8 pl-5">
+                      {categoryLines.map((line) => (
+                        <LineRow key={line.id} line={line} categories={categories} />
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="pl-5 text-sm text-ink/40">Sin líneas todavía.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-ink/50">Todavía no hay categorías.</p>
+        )}
       </Card>
     </div>
   );

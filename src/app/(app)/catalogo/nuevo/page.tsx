@@ -6,10 +6,10 @@ import { createProduct } from "../actions";
 
 export default async function NuevoProductoPage() {
   const supabase = await createClient();
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("*")
-    .order("sort_order", { ascending: true });
+  const [{ data: categories }, { data: lines }] = await Promise.all([
+    supabase.from("categories").select("*").order("sort_order", { ascending: true }),
+    supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),
+  ]);
 
   return (
     <div className="mx-auto max-w-lg">
@@ -20,7 +20,12 @@ export default async function NuevoProductoPage() {
         <ArrowLeft className="h-4 w-4" /> Volver al catálogo
       </Link>
       <h1 className="mb-6 font-display text-2xl text-ink">Nuevo producto</h1>
-      <ProductForm categories={categories ?? []} action={createProduct} submitLabel="Crear producto" />
+      <ProductForm
+        categories={categories ?? []}
+        lines={lines ?? []}
+        action={createProduct}
+        submitLabel="Crear producto"
+      />
     </div>
   );
 }

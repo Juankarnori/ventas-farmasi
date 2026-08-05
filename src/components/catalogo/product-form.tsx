@@ -12,11 +12,18 @@ import { VariantsEditor, type VariantDefault } from "./variants-editor";
 export interface ProductFormValues {
   name: string;
   category_id: string | null;
+  line_id: string | null;
   sale_price: number;
   cost_price: number;
   description: string | null;
   low_stock_threshold: number;
   image_url: string | null;
+}
+
+export interface ProductLineOption {
+  id: string;
+  name: string;
+  category_id: string;
 }
 
 interface ExistingImage {
@@ -29,17 +36,28 @@ const MAX_BYTES = 5 * 1024 * 1024;
 
 export function ProductForm({
   categories,
+  lines,
   action,
   defaultValues,
   defaultVariants,
   submitLabel = "Guardar",
 }: {
   categories: { id: string; name: string }[];
+  lines: ProductLineOption[];
   action: (formData: FormData) => void | Promise<void>;
   defaultValues?: Partial<ProductFormValues>;
   defaultVariants?: VariantDefault[];
   submitLabel?: string;
 }) {
+  const [categoryId, setCategoryId] = useState(defaultValues?.category_id ?? "");
+  const [lineId, setLineId] = useState(defaultValues?.line_id ?? "");
+  const linesForCategory = lines.filter((l) => l.category_id === categoryId);
+
+  function onCategoryChange(value: string) {
+    setCategoryId(value);
+    setLineId("");
+  }
+
   const [imageMode, setImageMode] = useState<"existing" | "upload" | "url">("existing");
   const [imageUrl, setImageUrl] = useState(defaultValues?.image_url ?? "");
   const [uploading, setUploading] = useState(false);
@@ -260,7 +278,8 @@ export function ProductForm({
         <Select
           id="category_id"
           name="category_id"
-          defaultValue={defaultValues?.category_id ?? ""}
+          value={categoryId}
+          onChange={(e) => onCategoryChange(e.target.value)}
         >
           <option value="">Sin categoría</option>
           {categories.map((c) => (
@@ -269,6 +288,25 @@ export function ProductForm({
             </option>
           ))}
         </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="line_id">Línea (opcional)</Label>
+        <Select
+          id="line_id"
+          name="line_id"
+          value={lineId}
+          onChange={(e) => setLineId(e.target.value)}
+          disabled={!categoryId}
+        >
+          <option value="">Sin línea</option>
+          {linesForCategory.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </Select>
+        {!categoryId && <p className="mt-1 text-xs text-ink/40">Elegí una categoría primero</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

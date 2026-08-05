@@ -11,6 +11,7 @@ function parseProductForm(formData: FormData) {
   const parsed = productSchema.safeParse({
     name: formData.get("name"),
     category_id: formData.get("category_id"),
+    line_id: formData.get("line_id"),
     sale_price: formData.get("sale_price"),
     cost_price: formData.get("cost_price"),
     description: formData.get("description"),
@@ -25,6 +26,7 @@ function parseProductForm(formData: FormData) {
   return {
     name: parsed.data.name,
     category_id: parsed.data.category_id || null,
+    line_id: parsed.data.line_id || null,
     sale_price: parsed.data.sale_price,
     cost_price: parsed.data.cost_price,
     description: parsed.data.description || null,

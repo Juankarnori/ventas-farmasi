@@ -16,9 +16,10 @@ export default async function EditarProductoPage({
   const profile = await getSessionProfile();
   const supabase = await createClient();
 
-  const [{ data: categories }, { data: product }, { data: variants }, { data: profiles }] =
+  const [{ data: categories }, { data: lines }, { data: product }, { data: variants }, { data: profiles }] =
     await Promise.all([
       supabase.from("categories").select("*").order("sort_order", { ascending: true }),
+      supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),
       supabase.from("products").select("*").eq("id", id).maybeSingle(),
       supabase
         .from("product_variants")
@@ -93,6 +94,7 @@ export default async function EditarProductoPage({
 
       <ProductForm
         categories={categories ?? []}
+        lines={lines ?? []}
         action={updateProductWithId}
         defaultValues={product}
         defaultVariants={defaultVariants}
