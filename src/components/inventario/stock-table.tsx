@@ -12,10 +12,16 @@ export interface StockGroup {
     colorName: string;
     stock: number;
     threshold: number;
+    // Solo se completa en la vista "Todo el negocio": desglose de solo
+    // lectura de a quién pertenece cada parte del total combinado.
+    breakdown?: { label: string; stock: number }[];
   }[];
 }
 
-export function StockTable({ groups, canAdjust = true }: { groups: StockGroup[]; canAdjust?: boolean }) {
+// `canAdjust` no tiene default a propósito: quién llama (la página de
+// Inventario) tiene que decidir explícitamente, según la vista activa, si
+// el stepper de ajuste puede aparecer — nunca se asume permitido.
+export function StockTable({ groups, canAdjust }: { groups: StockGroup[]; canAdjust: boolean }) {
   return (
     <Table>
       <Thead>
@@ -41,7 +47,12 @@ export function StockTable({ groups, canAdjust = true }: { groups: StockGroup[];
               <Tr key={v.id}>
                 <Td className="pl-6">{v.colorName}</Td>
                 <Td>
-                  <StockCell variantId={v.id} stock={v.stock} canAdjust={canAdjust} />
+                  <StockCell
+                    variantId={v.id}
+                    stock={v.stock}
+                    canAdjust={canAdjust}
+                    breakdown={v.breakdown}
+                  />
                 </Td>
                 <Td numeric>{v.threshold}</Td>
                 <Td>

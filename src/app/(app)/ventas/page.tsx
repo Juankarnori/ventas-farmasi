@@ -8,6 +8,7 @@ import { VentasFilters } from "@/components/ventas/ventas-filters";
 import { SaleHistoryTable, type SaleHistoryRow } from "@/components/ventas/sale-history-table";
 import { VentasTabs } from "@/components/ventas/ventas-tabs";
 import { variantLabel } from "@/lib/utils/variant-label";
+import { getSessionProfile } from "@/lib/auth/get-session-profile";
 
 export default async function VentasPage({
   searchParams,
@@ -15,7 +16,16 @@ export default async function VentasPage({
   searchParams: Promise<{ desde?: string; hasta?: string; usuaria?: string; producto?: string }>;
 }) {
   const { desde, hasta, usuaria, producto } = await searchParams;
+  const profile = await getSessionProfile();
   const supabase = await createClient();
+
+  // Una no-admin nunca puede pedir las ventas de otra usuaria — ni por la
+  // UI (el selector ya no aparece, ver VentasFilters) ni tocando el query
+  // param a mano: acá se ignora cualquier `usuaria` que no sea la propia.
+  // La RLS de `sales` ya lo bloquearía igual, pero así la pantalla nunca
+  // llega a mostrar "0 resultados" por un filtro que en realidad no debería
+  // haber podido elegir.
+  const effectiveUsuaria = profile.is_admin ? usuaria : profile.id;
 
   const [{ data: profiles }, { data: products }] = await Promise.all([
     supabase.from("profiles").select("id, display_name"),
@@ -29,7 +39,7 @@ export default async function VentasPage({
     .order("sale_date", { ascending: false });
   if (desde) salesQuery = salesQuery.gte("sale_date", desde);
   if (hasta) salesQuery = salesQuery.lte("sale_date", hasta);
-  if (usuaria) salesQuery = salesQuery.eq("seller_profile_id", usuaria);
+  if (effectiveUsuaria) salesQuery = salesQuery.eq("seller_profile_id", effectiveUsuaria);
 
   const { data: sales } = await salesQuery;
   const saleIds = (sales ?? []).map((s) => s.id);
@@ -92,7 +102,7 @@ export default async function VentasPage({
       </div>
 
       <div className="mt-6">
-        <VentasFilters profiles={profiles ?? []} products={products ?? []} />
+        <VentasFilters profiles={profiles ?? []} products={products ?? []} isAdmin={profile.is_admin} />
       </div>
 
       <div className="mt-6">

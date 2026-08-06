@@ -7,9 +7,11 @@ import { Select } from "@/components/ui/select";
 export function VentasFilters({
   profiles,
   products,
+  isAdmin,
 }: {
   profiles: { id: string; display_name: string }[];
   products: { id: string; name: string }[];
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -40,19 +42,21 @@ export function VentasFilters({
           aria-label="Hasta"
         />
       </div>
-      <div className="w-44">
-        <Select
-          defaultValue={searchParams.get("usuaria") ?? ""}
-          onChange={(e) => update("usuaria", e.target.value)}
-        >
-          <option value="">Todas las usuarias</option>
-          {profiles.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.display_name}
-            </option>
-          ))}
-        </Select>
-      </div>
+      {isAdmin && (
+        <div className="w-44">
+          <Select
+            defaultValue={searchParams.get("usuaria") ?? ""}
+            onChange={(e) => update("usuaria", e.target.value)}
+          >
+            <option value="">Todas las usuarias</option>
+            {profiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.display_name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
       <div className="w-56">
         <Select
           defaultValue={searchParams.get("producto") ?? ""}

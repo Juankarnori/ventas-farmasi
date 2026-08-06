@@ -6,8 +6,10 @@ import { Select } from "@/components/ui/select";
 
 export function DateRangeFilter({
   profiles,
+  isAdmin,
 }: {
   profiles: { id: string; display_name: string }[];
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -34,19 +36,21 @@ export function DateRangeFilter({
         onChange={(e) => update("hasta", e.target.value)}
         aria-label="Hasta"
       />
-      <div className="w-44">
-        <Select
-          defaultValue={searchParams.get("usuaria") ?? ""}
-          onChange={(e) => update("usuaria", e.target.value)}
-        >
-          <option value="">Todas las usuarias</option>
-          {profiles.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.display_name}
-            </option>
-          ))}
-        </Select>
-      </div>
+      {isAdmin && (
+        <div className="w-44">
+          <Select
+            defaultValue={searchParams.get("usuaria") ?? ""}
+            onChange={(e) => update("usuaria", e.target.value)}
+          >
+            <option value="">Todas las usuarias</option>
+            {profiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.display_name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
     </div>
   );
 }

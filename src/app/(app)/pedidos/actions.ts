@@ -50,7 +50,14 @@ export async function updateOrder(orderId: string, formData: FormData) {
     .eq("id", orderId)
     .maybeSingle();
 
-  if (!order || order.status !== "pendiente") {
+  if (!order) {
+    // También cae acá si el pedido existe pero es de otra usuaria (no
+    // admin): la RLS de `orders` ya lo esconde, así que para quien llama
+    // es indistinguible de "no existe" — el mensaje genérico es correcto.
+    throw new Error("Pedido no encontrado.");
+  }
+
+  if (order.status !== "pendiente") {
     throw new Error(
       "Este pedido ya fue recibido y afectó el stock — no se puede editar. Si faltó o sobró algo, hacé un ajuste manual desde Inventario.",
     );

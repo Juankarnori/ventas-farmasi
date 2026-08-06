@@ -18,41 +18,19 @@ export default async function ClientesPage({
 
   let query = supabase.from("customers").select("*").order("name", { ascending: true });
   if (q) query = query.or(`name.ilike.%${q}%,phone.ilike.%${q}%`);
-  const { data: customers } = await query;
+  const [{ data: customers }, { data: totals }] = await Promise.all([
+    query,
+    // Clientes es un registro compartido de seguimiento (como Catálogo o
+    // Préstamos): el ranking por total gastado tiene que sumar las ventas
+    // de todas las usuarias, no solo las propias — por eso esto no
+    // consulta `sales`/`sale_items` directo (RLS los filtraría a "lo mío")
+    // sino una función que agrega el negocio entero a propósito. Ver
+    // 0022_privacy_orders_sales.sql.
+    supabase.rpc("list_customer_totals"),
+  ]);
 
-  const customerIds = (customers ?? []).map((c) => c.id);
-
-  const { data: sales } =
-    customerIds.length > 0
-      ? await supabase
-          .from("sales")
-          .select("id, customer_id")
-          .in("customer_id", customerIds)
-          .in("payment_status", ["pagado", "completado"])
-      : { data: [] };
-
-  const saleIds = (sales ?? []).map((s) => s.id);
-  const { data: items } =
-    saleIds.length > 0
-      ? await supabase.from("sale_items").select("sale_id, sale_price, quantity").in("sale_id", saleIds)
-      : { data: [] };
-
-  const customerBySale = new Map((sales ?? []).map((s) => [s.id, s.customer_id]));
-  const totalsByCustomer = new Map<string, number>();
-  for (const item of items ?? []) {
-    const customerId = customerBySale.get(item.sale_id);
-    if (!customerId) continue;
-    totalsByCustomer.set(
-      customerId,
-      (totalsByCustomer.get(customerId) ?? 0) + item.sale_price * item.quantity,
-    );
-  }
-
-  const purchaseCountByCustomer = new Map<string, number>();
-  for (const s of sales ?? []) {
-    if (!s.customer_id) continue;
-    purchaseCountByCustomer.set(s.customer_id, (purchaseCountByCustomer.get(s.customer_id) ?? 0) + 1);
-  }
+  const totalsByCustomer = new Map((totals ?? []).map((t) => [t.customer_id, t.total_spent]));
+  const purchaseCountByCustomer = new Map((totals ?? []).map((t) => [t.customer_id, t.purchase_count]));
 
   const cards: CustomerCardData[] = (customers ?? [])
     .map((c) => ({

@@ -443,6 +443,30 @@ export interface Database {
         Args: { p_sale_id: string };
         Returns: void;
       };
+      get_customer_purchase_history: {
+        Args: { p_customer_id: string };
+        Returns: {
+          sale_item_id: string;
+          sale_id: string;
+          sale_date: string;
+          payment_status: PaymentStatus;
+          seller_profile_id: string;
+          variant_id: string;
+          product_id: string;
+          quantity: number;
+          sale_price: number;
+          cost_price: number;
+          profit: number;
+        }[];
+      };
+      list_customer_totals: {
+        Args: Record<string, never>;
+        Returns: {
+          customer_id: string;
+          total_spent: number;
+          purchase_count: number;
+        }[];
+      };
     };
   };
 }

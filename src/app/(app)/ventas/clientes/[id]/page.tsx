@@ -25,19 +25,17 @@ export default async function ClienteDetallePage({
     notFound();
   }
 
-  const { data: sales } = await supabase
-    .from("sales")
-    .select("*")
-    .eq("customer_id", id)
-    .order("sale_date", { ascending: false });
+  // Clientes es un registro compartido de seguimiento: si Mamá y Yo le
+  // vendemos ambas a esta clienta, las dos necesitamos ver su historial
+  // completo. Por eso esto no consulta `sales`/`sale_items` directo (RLS
+  // los filtraría a "lo que yo le vendí"), sino una función que trae el
+  // historial completo de la clienta a propósito, sin importar quién de
+  // las dos hizo cada venta. Ver 0022_privacy_orders_sales.sql.
+  const { data: history } = await supabase.rpc("get_customer_purchase_history", {
+    p_customer_id: id,
+  });
 
-  const saleIds = (sales ?? []).map((s) => s.id);
-  const { data: items } =
-    saleIds.length > 0
-      ? await supabase.from("sale_items").select("*").in("sale_id", saleIds)
-      : { data: [] };
-
-  const variantIds = [...new Set((items ?? []).map((i) => i.variant_id))];
+  const variantIds = [...new Set((history ?? []).map((h) => h.variant_id))];
   const [{ data: variants }, { data: products }, { data: profiles }] = await Promise.all([
     variantIds.length > 0
       ? supabase.from("product_variants").select("id, product_id, color_name").in("id", variantIds)
@@ -49,7 +47,6 @@ export default async function ClienteDetallePage({
   const variantById = new Map((variants ?? []).map((v) => [v.id, v]));
   const productById = new Map((products ?? []).map((p) => [p.id, p]));
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
-  const saleById = new Map((sales ?? []).map((s) => [s.id, s]));
 
   function labelFor(item: { product_id: string; variant_id: string }) {
     const productName = productById.get(item.product_id)?.name ?? "—";
@@ -57,31 +54,27 @@ export default async function ClienteDetallePage({
     return colorName ? variantLabel(productName, colorName) : productName;
   }
 
-  const historyRows: SaleHistoryRow[] = (items ?? [])
-    .map((item): SaleHistoryRow | null => {
-      const sale = saleById.get(item.sale_id);
-      if (!sale) return null;
-      return {
-        id: item.id,
-        saleDate: sale.sale_date,
+  const historyRows: SaleHistoryRow[] = (history ?? [])
+    .map(
+      (item): SaleHistoryRow => ({
+        id: item.sale_item_id,
+        saleDate: item.sale_date,
         customerName: customer.name,
-        sellerName: profileById.get(sale.seller_profile_id)?.display_name ?? "—",
+        sellerName: profileById.get(item.seller_profile_id)?.display_name ?? "—",
         productName: labelFor(item),
         quantity: item.quantity,
         salePrice: item.sale_price,
         profit: item.profit,
-      };
-    })
-    .filter((r): r is SaleHistoryRow => r !== null)
+      }),
+    )
     .sort((a, b) => (a.saleDate < b.saleDate ? 1 : -1));
 
   // Productos más comprados: se cuentan todas las compras que no hayan
   // sido canceladas (los apartados en curso también cuentan — ya eligió
   // el producto, aunque todavía no haya terminado de pagarlo).
   const topByVariant = new Map<string, { label: string; quantity: number }>();
-  for (const item of items ?? []) {
-    const sale = saleById.get(item.sale_id);
-    if (!sale || sale.payment_status === "cancelado") continue;
+  for (const item of history ?? []) {
+    if (item.payment_status === "cancelado") continue;
     const entry = topByVariant.get(item.variant_id) ?? { label: labelFor(item), quantity: 0 };
     entry.quantity += item.quantity;
     topByVariant.set(item.variant_id, entry);
@@ -93,13 +86,11 @@ export default async function ClienteDetallePage({
   // Total gastado / cantidad de compras: solo ventas realmente cobradas
   // (mismo criterio que el resto de la app para "ganancia"/"ventas" —
   // un apartado con saldo pendiente todavía no es plata en mano).
-  const paidSales = (sales ?? []).filter(
-    (s) => s.payment_status === "pagado" || s.payment_status === "completado",
+  const paidItems = (history ?? []).filter(
+    (item) => item.payment_status === "pagado" || item.payment_status === "completado",
   );
-  const paidSaleIds = new Set(paidSales.map((s) => s.id));
-  const totalSpent = (items ?? [])
-    .filter((i) => paidSaleIds.has(i.sale_id))
-    .reduce((sum, i) => sum + i.sale_price * i.quantity, 0);
+  const paidSaleIds = new Set(paidItems.map((item) => item.sale_id));
+  const totalSpent = paidItems.reduce((sum, item) => sum + item.sale_price * item.quantity, 0);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -122,7 +113,7 @@ export default async function ClienteDetallePage({
           </div>
           <div>
             <p className="text-xs text-ink/50">Compras</p>
-            <p className="font-mono text-lg tabular-nums text-ink">{paidSales.length}</p>
+            <p className="font-mono text-lg tabular-nums text-ink">{paidSaleIds.size}</p>
           </div>
         </div>
       </Card>

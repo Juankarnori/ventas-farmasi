@@ -72,7 +72,15 @@ export default async function InventarioPage({
 
     if (vista === "todo") {
       const total = rows.reduce((sum, r) => sum + r.stock, 0);
-      return { stock: total, threshold };
+      // Desglose de solo lectura: un número combinado no le pertenece a
+      // nadie en particular, así que acá nunca se ofrece el stepper de
+      // ajuste (ver canAdjust más abajo) — solo se muestra de quién es
+      // cada parte del total.
+      const breakdown = [profile, ...otherProfiles].map((p) => ({
+        label: p.id === profile.id ? "Tuyo" : p.display_name,
+        stock: rows.find((r) => r.profile_id === p.id)?.stock ?? 0,
+      }));
+      return { stock: total, threshold, breakdown };
     }
 
     // vista es el profile_id de una persona específica del equipo
@@ -120,7 +128,16 @@ export default async function InventarioPage({
       </div>
 
       <Card className="p-0">
-        <StockTable groups={groups} canAdjust={vista === "mio" || vista === "todo"} />
+        {/*
+          El stepper de ajuste (+/-) solo tiene sentido en "Mi stock": es el
+          único número que le pertenece de verdad a quien está mirando la
+          pantalla. En "Todo el negocio" es un total combinado (no hay forma
+          correcta de saber si un ajuste ahí debería restar del stock propio
+          o del de otra persona) y en el stock de otra persona específica,
+          ajustarlo movería un número que no es el tuyo — en ambos casos
+          queda de solo lectura.
+        */}
+        <StockTable groups={groups} canAdjust={vista === "mio"} />
       </Card>
 
       <Card>

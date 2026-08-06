@@ -8,6 +8,7 @@ import { ExpensesTable } from "@/components/finanzas/expenses-table";
 import { AlertsPanel } from "@/components/finanzas/alerts-panel";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { computeNetDebts, type DebtEntry } from "@/lib/utils/loan-debt";
+import { getSessionProfile } from "@/lib/auth/get-session-profile";
 
 export default async function FinanzasPage({
   searchParams,
@@ -15,7 +16,15 @@ export default async function FinanzasPage({
   searchParams: Promise<{ desde?: string; hasta?: string; usuaria?: string }>;
 }) {
   const { desde, hasta, usuaria } = await searchParams;
+  const profile = await getSessionProfile();
   const supabase = await createClient();
+
+  // Igual que en Ventas: una no-admin nunca ve el negocio completo acá,
+  // solo sus propias ventas/pedidos/gastos — el selector de usuaria ni
+  // siquiera le aparece (ver DateRangeFilter), y esto cierra el intento de
+  // forzar el query param a mano. La administradora sigue viendo todo (o
+  // filtrando a una persona puntual) como hasta ahora.
+  const effectiveUsuaria = profile.is_admin ? usuaria : profile.id;
 
   const [{ data: profiles }, { data: products }] = await Promise.all([
     supabase.from("profiles").select("*"),
@@ -25,14 +34,14 @@ export default async function FinanzasPage({
   let salesQuery = supabase.from("sales").select("*").in("payment_status", ["pagado", "completado"]);
   if (desde) salesQuery = salesQuery.gte("sale_date", desde);
   if (hasta) salesQuery = salesQuery.lte("sale_date", hasta);
-  if (usuaria) salesQuery = salesQuery.eq("seller_profile_id", usuaria);
+  if (effectiveUsuaria) salesQuery = salesQuery.eq("seller_profile_id", effectiveUsuaria);
   const { data: sales } = await salesQuery;
   const saleIds = (sales ?? []).map((s) => s.id);
 
   let expensesQuery = supabase.from("expenses").select("*");
   if (desde) expensesQuery = expensesQuery.gte("expense_date", desde);
   if (hasta) expensesQuery = expensesQuery.lte("expense_date", hasta);
-  if (usuaria) expensesQuery = expensesQuery.eq("created_by", usuaria);
+  if (effectiveUsuaria) expensesQuery = expensesQuery.eq("created_by", effectiveUsuaria);
   const { data: expenses } = await expensesQuery.order("expense_date", { ascending: false });
 
   const saleById = new Map((sales ?? []).map((s) => [s.id, s]));
@@ -136,7 +145,7 @@ export default async function FinanzasPage({
           <h1 className="font-display text-3xl text-ink">Finanzas</h1>
           <p className="mt-1 text-sm text-ink/60">Resumen del negocio.</p>
         </div>
-        <DateRangeFilter profiles={profiles ?? []} />
+        <DateRangeFilter profiles={profiles ?? []} isAdmin={profile.is_admin} />
       </div>
 
       <AlertsPanel
