@@ -30,6 +30,13 @@ interface Row {
   unit_cost: number;
 }
 
+export interface OrderItemDefault {
+  product_id: string;
+  variant_id: string;
+  quantity: number;
+  unit_cost: number;
+}
+
 function effectiveCost(product: OrderableProduct, variant: OrderableVariant) {
   return variant.cost_override ?? product.cost_price;
 }
@@ -38,10 +45,12 @@ export function OrderItemsEditor({
   products,
   categories,
   lines,
+  defaultItems,
 }: {
   products: OrderableProduct[];
   categories: { id: string; name: string }[];
   lines: { id: string; name: string; category_id: string }[];
+  defaultItems?: OrderItemDefault[];
 }) {
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
 
@@ -81,10 +90,13 @@ export function OrderItemsEditor({
     };
   }
 
-  const [rows, setRows] = useState<Row[]>(() =>
-    products.length > 0 ? [{ key: 0, ...firstRowFor(products[0]) }] : [],
-  );
-  const [nextKey, setNextKey] = useState(1);
+  const [rows, setRows] = useState<Row[]>(() => {
+    if (defaultItems && defaultItems.length > 0) {
+      return defaultItems.map((item, i) => ({ key: i, ...item }));
+    }
+    return products.length > 0 ? [{ key: 0, ...firstRowFor(products[0]) }] : [];
+  });
+  const [nextKey, setNextKey] = useState(() => (defaultItems && defaultItems.length > 0 ? defaultItems.length : 1));
 
   function addRow() {
     const pool = filteredProducts.length > 0 ? filteredProducts : products;

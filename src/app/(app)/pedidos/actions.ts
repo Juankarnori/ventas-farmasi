@@ -36,6 +36,93 @@ export async function createOrder(formData: FormData) {
   redirect(`/pedidos/${orderId}`);
 }
 
+// Solo mientras el pedido está pendiente: todavía no se movió ni un
+// número de stock, así que reemplazar sus renglones enteros (borrar +
+// reinsertar) y recalcular el total es seguro — no hay stock_movements
+// ni nada más que dependa de estos order_items puntuales.
+export async function updateOrder(orderId: string, formData: FormData) {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("status")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (!order || order.status !== "pendiente") {
+    throw new Error(
+      "Este pedido ya fue recibido y afectó el stock — no se puede editar. Si faltó o sobró algo, hacé un ajuste manual desde Inventario.",
+    );
+  }
+
+  const itemsRaw = String(formData.get("items") ?? "[]");
+
+  let items: unknown;
+  try {
+    items = JSON.parse(itemsRaw);
+  } catch {
+    throw new Error("Los productos del pedido no son válidos");
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error("El pedido necesita al menos un producto");
+  }
+
+  const parsedItems = items as { variant_id: string; quantity: number; unit_cost: number }[];
+  const variantIds = parsedItems.map((i) => i.variant_id);
+
+  const { data: variants } = await supabase
+    .from("product_variants")
+    .select("id, product_id")
+    .in("id", variantIds);
+
+  const productIdByVariant = new Map((variants ?? []).map((v) => [v.id, v.product_id]));
+
+  for (const item of parsedItems) {
+    if (!productIdByVariant.has(item.variant_id)) {
+      throw new Error("Uno de los productos del pedido ya no existe en el catálogo");
+    }
+    if (!(item.quantity > 0)) {
+      throw new Error("Las cantidades tienen que ser mayores a 0");
+    }
+  }
+
+  const { error: deleteError } = await supabase.from("order_items").delete().eq("order_id", orderId);
+
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
+
+  const { error: insertError } = await supabase.from("order_items").insert(
+    parsedItems.map((item) => ({
+      order_id: orderId,
+      variant_id: item.variant_id,
+      product_id: productIdByVariant.get(item.variant_id) as string,
+      quantity: item.quantity,
+      unit_cost: item.unit_cost,
+    })),
+  );
+
+  if (insertError) {
+    throw new Error(insertError.message);
+  }
+
+  const totalCost = parsedItems.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
+
+  const { error: updateError } = await supabase
+    .from("orders")
+    .update({ total_cost: totalCost })
+    .eq("id", orderId);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  revalidatePath(`/pedidos/${orderId}`);
+  revalidatePath("/pedidos");
+}
+
 export async function markOrderReceived(orderId: string) {
   await getSessionProfile();
   const supabase = await createClient();
