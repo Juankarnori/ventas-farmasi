@@ -52,7 +52,7 @@ update profiles set is_admin = true where user_id = (select id from auth.users w
 Los archivos de `supabase/migrations/` están numerados y se corren en orden. Dos formas de hacerlo:
 
 **Opción A — SQL Editor (más simple, no requiere instalar nada):**
-Abrí **SQL Editor** en el dashboard de Supabase y pegá el contenido de cada archivo `0001_...sql` a `0013_...sql` en orden, ejecutando uno por uno.
+Abrí **SQL Editor** en el dashboard de Supabase y pegá el contenido de **todos** los archivos de `supabase/migrations/`, en orden numérico, ejecutando uno por uno (no te quedes a mitad de camino — varias funciones se redefinen en migraciones posteriores, así que si salteás alguna podés terminar con una versión vieja de una función viviendo en tu base).
 
 **Opción B — Supabase CLI:**
 ```bash
