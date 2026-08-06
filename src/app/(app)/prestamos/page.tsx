@@ -9,7 +9,6 @@ import { SaldoNetoCard, type PendingLoanForBalance } from "@/components/prestamo
 import { MonetaryDebtCard } from "@/components/prestamos/monetary-debt-card";
 import { variantLabel } from "@/lib/utils/variant-label";
 import type { DebtEntry } from "@/lib/utils/loan-debt";
-import type { ProfileSlot } from "@/lib/types/database.types";
 
 export default async function PrestamosPage() {
   const supabase = await createClient();
@@ -24,10 +23,6 @@ export default async function PrestamosPage() {
   const productById = new Map((products ?? []).map((p) => [p.id, p]));
   const variantById = new Map((variants ?? []).map((v) => [v.id, v]));
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
-  const displayNames = {
-    mama: profiles?.find((p) => p.slot === "mama")?.display_name ?? "Mamá",
-    yo: profiles?.find((p) => p.slot === "yo")?.display_name ?? "Yo",
-  } as Record<ProfileSlot, string>;
 
   function labelFor(loan: { product_id: string; variant_id: string }) {
     const productName = productById.get(loan.product_id)?.name ?? "—";
@@ -58,15 +53,19 @@ export default async function PrestamosPage() {
       variantId: l.variant_id,
       label: labelFor(l),
       quantity: l.quantity,
-      fromSlot: profileById.get(l.from_profile_id)?.slot ?? "mama",
-      toSlot: profileById.get(l.to_profile_id)?.slot ?? "yo",
+      fromProfileId: l.from_profile_id,
+      fromName: profileById.get(l.from_profile_id)?.display_name ?? "—",
+      toProfileId: l.to_profile_id,
+      toName: profileById.get(l.to_profile_id)?.display_name ?? "—",
     }));
 
   const debts: DebtEntry[] = (loans ?? [])
     .filter((l) => l.status === "vendido" && l.debt_settled_at === null)
     .map((l) => ({
-      fromSlot: profileById.get(l.from_profile_id)?.slot ?? "mama",
-      toSlot: profileById.get(l.to_profile_id)?.slot ?? "yo",
+      fromProfileId: l.from_profile_id,
+      fromName: profileById.get(l.from_profile_id)?.display_name ?? "—",
+      toProfileId: l.to_profile_id,
+      toName: profileById.get(l.to_profile_id)?.display_name ?? "—",
       amount: l.unit_cost * l.quantity,
     }));
 
@@ -75,7 +74,7 @@ export default async function PrestamosPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl text-ink">Préstamos</h1>
-          <p className="mt-1 text-sm text-ink/60">Productos que se prestan entre las dos.</p>
+          <p className="mt-1 text-sm text-ink/60">Productos que se prestan entre el equipo.</p>
         </div>
         <Link href="/prestamos/nuevo">
           <Button>
@@ -85,8 +84,8 @@ export default async function PrestamosPage() {
       </div>
 
       <div className="mt-6 flex flex-col gap-4">
-        <SaldoNetoCard loans={balanceInput} displayNames={displayNames} />
-        <MonetaryDebtCard debts={debts} displayNames={displayNames} />
+        <SaldoNetoCard loans={balanceInput} />
+        <MonetaryDebtCard debts={debts} />
       </div>
 
       <div className="mt-6">

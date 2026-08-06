@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
-import { NAV_ITEMS } from "./nav-items";
+import { getNavItems } from "./nav-items";
 
-export function SidebarNav() {
+export function SidebarNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const items = getNavItems(isAdmin);
 
   return (
     <nav className="flex flex-col gap-1">
-      {NAV_ITEMS.map((item) => {
+      {items.map((item) => {
         const active = pathname.startsWith(item.href);
         return (
           <Link

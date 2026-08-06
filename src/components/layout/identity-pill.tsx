@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { LogOut } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import { cn } from "@/lib/utils/cn";
+import { IDENTITY_COLORS } from "@/lib/utils/identity-colors";
 import type { ProfileColor } from "@/lib/types/database.types";
 
 export function IdentityPill({
@@ -24,7 +25,8 @@ export function IdentityPill({
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  const isTurquoise = color === "turquoise";
+  const swatch = IDENTITY_COLORS[color] ?? IDENTITY_COLORS.teal;
+  const initial = displayName.trim().charAt(0).toUpperCase() || "?";
 
   return (
     <div ref={ref} className="relative">
@@ -33,24 +35,19 @@ export function IdentityPill({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-label={`Sesión de ${displayName}, abrir menú`}
-        className="flex items-center overflow-hidden rounded-full ring-1 ring-gold/40 transition-shadow hover:ring-gold/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+        className="flex items-center gap-2 overflow-hidden rounded-full py-1 pl-1 pr-3 ring-1 ring-gold/40 transition-shadow hover:ring-gold/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
         <span
           className={cn(
-            "flex h-9 items-center px-3 text-xs font-semibold",
-            isTurquoise ? "bg-primary text-background" : "bg-gold/40 text-ink",
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+            swatch.bgClass,
+            swatch.textClass,
           )}
+          aria-hidden
         >
-          M
+          {initial}
         </span>
-        <span
-          className={cn(
-            "flex h-9 items-center gap-1.5 px-3 text-xs font-semibold",
-            isTurquoise ? "bg-primary/40 text-background" : "bg-gold text-ink",
-          )}
-        >
-          Y
-        </span>
+        <span className="max-w-[8rem] truncate text-sm font-medium text-ink">{displayName}</span>
       </button>
 
       {open && (

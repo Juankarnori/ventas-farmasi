@@ -14,7 +14,20 @@ export async function GET(request: Request) {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (user) {
+      if (user && user.email) {
+        // El chequeo de autorización pasa ANTES que cualquier lógica de
+        // perfil: si el correo no está en la lista (o fue revocado), se
+        // corta acá — nunca se crea ni se toca ningún perfil para una
+        // cuenta no autorizada.
+        const { data: status } = await supabase.rpc("check_email_authorization", {
+          p_email: user.email,
+        });
+
+        if (!status || status === "revocado") {
+          await supabase.auth.signOut();
+          return NextResponse.redirect(`${origin}/auth/unauthorized?reason=not_authorized`);
+        }
+
         const { data: profile } = await supabase
           .from("profiles")
           .select("id")
@@ -25,19 +38,10 @@ export async function GET(request: Request) {
           return NextResponse.redirect(`${origin}/`);
         }
 
-        const { count } = await supabase
-          .from("profiles")
-          .select("id", { count: "exact", head: true })
-          .is("user_id", null);
-
-        if (count && count > 0) {
-          return NextResponse.redirect(`${origin}/auth/claim`);
-        }
-
-        // Los 2 slots ya estan reclamados por otras cuentas: esta cuenta
-        // de Google no es ninguna de las 2 usuarias autorizadas.
-        await supabase.auth.signOut();
-        return NextResponse.redirect(`${origin}/auth/unauthorized`);
+        // Correo autorizado sin perfil todavía: primera vez que entra,
+        // va a crear su nombre y color. Ya no hay "slots" que puedan
+        // estar ocupados — cualquier cantidad de perfiles puede convivir.
+        return NextResponse.redirect(`${origin}/auth/claim`);
       }
     }
   }

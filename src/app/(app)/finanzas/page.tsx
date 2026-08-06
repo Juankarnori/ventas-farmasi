@@ -7,8 +7,7 @@ import { ExpensesForm } from "@/components/finanzas/expenses-form";
 import { ExpensesTable } from "@/components/finanzas/expenses-table";
 import { AlertsPanel } from "@/components/finanzas/alerts-panel";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { computeNetDebt, type DebtEntry } from "@/lib/utils/loan-debt";
-import type { ProfileSlot } from "@/lib/types/database.types";
+import { computeNetDebts, type DebtEntry } from "@/lib/utils/loan-debt";
 
 export default async function FinanzasPage({
   searchParams,
@@ -97,26 +96,20 @@ export default async function FinanzasPage({
     .is("debt_settled_at", null);
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
-  const displayNames = {
-    mama: profiles?.find((p) => p.slot === "mama")?.display_name ?? "Mamá",
-    yo: profiles?.find((p) => p.slot === "yo")?.display_name ?? "Yo",
-  } as Record<ProfileSlot, string>;
 
   const debts: DebtEntry[] = (unsettledLoans ?? []).map((l) => ({
-    fromSlot: profileById.get(l.from_profile_id)?.slot ?? "mama",
-    toSlot: profileById.get(l.to_profile_id)?.slot ?? "yo",
+    fromProfileId: l.from_profile_id,
+    fromName: profileById.get(l.from_profile_id)?.display_name ?? "—",
+    toProfileId: l.to_profile_id,
+    toName: profileById.get(l.to_profile_id)?.display_name ?? "—",
     amount: l.unit_cost * l.quantity,
   }));
 
-  const netDebt = computeNetDebt(debts);
-  const debtMessage =
-    netDebt !== 0
-      ? {
-          debtorName: netDebt > 0 ? displayNames.yo : displayNames.mama,
-          creditorName: netDebt > 0 ? displayNames.mama : displayNames.yo,
-          amount: Math.abs(netDebt),
-        }
-      : null;
+  const debtMessages = computeNetDebts(debts).map((line) => ({
+    debtorName: line.debtorName,
+    creditorName: line.creditorName,
+    amount: line.amount,
+  }));
 
   const { data: openApartados } = await supabase
     .from("sales")
@@ -149,7 +142,7 @@ export default async function FinanzasPage({
       <AlertsPanel
         lowStockProducts={lowStockProducts}
         pendingLoansCount={pendingLoansCount ?? 0}
-        debtMessage={debtMessage}
+        debtMessages={debtMessages}
         accountsReceivable={accountsReceivable}
         undeliveredCount={undeliveredCount ?? 0}
       />

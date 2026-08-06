@@ -1,18 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  /* Azul cielo & arena */
-  --background: #d6eaf8; /* fondo principal */
-  --background-tint: #eaf3fb; /* degradados y zonas iluminadas */
-  --panel: #bbdcf6; /* paneles, tarjetas y superficies satinadas (cards, modales, chips) */
-  --base: #e6dcc6; /* superficies base: sidebar, headers, pedestales */
-  --primary: #5f8fb8; /* títulos principales y marca */
-  --gold: #c8a66a; /* bordes y detalles finos */
-  --sage: #7daed3; /* íconos, líneas divisorias, marcos finos */
-  --ink: #3f3f3f; /* texto informativo / cuerpo */
+  /* Teal & gold profundo */
+  --background: #f3f8f6; /* fondo principal */
+  --background-tint: #fafdfc; /* degradados y zonas iluminadas */
+  --panel: #bfe0d6; /* paneles, tarjetas y superficies satinadas (cards, modales, chips) */
+  --base: #f0e6d2; /* superficies base: sidebar, headers, pedestales */
+  --primary: #0e5c52; /* títulos principales y marca */
+  --gold: #c9a15a; /* bordes y detalles finos */
+  --sage: #4e8c81; /* íconos, líneas divisorias, marcos finos */
+  --ink: #2c3b38; /* texto informativo / cuerpo */
   --surface: #fffdf8; /* fondo de tarjetas / elementos destacados en blanco */
-  --accent: #d8c7a8; /* highlights, badges de estado, notificaciones */
-  --muted: #afa8a0; /* texto secundario / íconos apagados / estados inactivos */
+  --accent: #d97757; /* acento secundario: badges, chips, CTAs */
+  --accent-pill: #e19279; /* coral aclarado ~20%, solo para el fondo solido del identity pill (texto --ink encima necesita 4.5:1, el --accent normal solo da ~3.76:1) */
+  --sage-pill: #83afa7; /* sage aclarado ~30%, mismo motivo: --sage solido con texto --ink encima solo da ~3:1 */
+  --muted: #8fa79e; /* texto secundario / íconos apagados / estados inactivos */
 }
 
 @theme inline {
@@ -22,9 +24,11 @@
   --color-base: var(--base);
   --color-primary: var(--primary);
   --color-accent: var(--accent);
+  --color-accent-pill: var(--accent-pill);
   --color-ink: var(--ink);
   --color-gold: var(--gold);
   --color-sage: var(--sage);
+  --color-sage-pill: var(--sage-pill);
   --color-surface: var(--surface);
   --color-muted: var(--muted);
 

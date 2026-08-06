@@ -1,6 +1,6 @@
 # Farmasi Bella — Gestión
 
-App para gestionar el negocio de reventa de productos Farmasi entre dos usuarias (Mamá / Yo), con catálogo, inventario, pedidos, ventas, préstamos entre las dos y finanzas — datos compartidos en una base de datos común.
+App para gestionar el negocio de reventa de productos Farmasi entre el equipo (cualquier cantidad de personas, cada una con su propio perfil), con catálogo, inventario, pedidos, ventas, préstamos entre el equipo y finanzas — datos compartidos en una base de datos común.
 
 ## Stack
 
@@ -35,7 +35,17 @@ Vas a completar `.env.local` en el paso 2.
    - **Site URL**: `http://localhost:3000` (en producción, la URL de Vercel)
    - **Redirect URLs**: agregá `http://localhost:3000/auth/callback` (y luego la de producción, `https://tu-app.vercel.app/auth/callback`)
 
-No hace falta crear usuarios a mano: la app tiene un flujo de "auto-registro" — la primera vez que cada una entra con su cuenta de Google, elige si es "Mamá" o "Yo" una única vez. Una vez ocupados los dos perfiles, cualquier otra cuenta de Google queda bloqueada automáticamente.
+El acceso lo gestiona la administradora desde el panel **Equipo** dentro de la app (no hay que tocar código): ahí autorizás el correo de Google de cada persona. La primera vez que esa cuenta entra, completa su propio nombre y elige un color de identidad — cualquier otra cuenta de Google no autorizada queda bloqueada automáticamente. La primera cuenta que uses para desplegar (la tuya) hay que autorizarla a mano una única vez insertándola en `authorized_emails` desde el SQL Editor, ya que todavía no existe nadie con acceso al panel de Equipo para hacerlo desde la app:
+
+```sql
+insert into authorized_emails (email, status) values ('tu-correo@gmail.com', 'pendiente');
+```
+
+Después de entrar y crear tu perfil, marcate como administradora para poder invitar al resto del equipo desde ahí:
+
+```sql
+update profiles set is_admin = true where user_id = (select id from auth.users where email = 'tu-correo@gmail.com');
+```
 
 ## 3. Correr las migraciones
 

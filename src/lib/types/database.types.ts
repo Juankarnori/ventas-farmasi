@@ -6,8 +6,11 @@
 // tipo GenericSchema de @supabase/postgrest-js aunque no los usemos (no
 // modelamos joins embebidos tipados).
 
-export type ProfileSlot = "mama" | "yo";
-export type ProfileColor = "turquoise" | "coral";
+// Lista corta de colores de identidad predefinidos (ver
+// src/lib/utils/identity-colors.ts para la correspondencia visual con la
+// paleta de la app). Cualquier cantidad de perfiles puede compartir
+// color — no hay un límite de "2 colores para 2 personas".
+export type ProfileColor = "teal" | "coral" | "gold" | "sage";
 export type StockMovementType =
   | "entrada_pedido"
   | "salida_venta"
@@ -21,6 +24,7 @@ export type OrderStatus = "pendiente" | "recibido";
 export type LoanStatus = "pendiente" | "devuelto" | "vendido";
 export type ExpenseCategory = "envio" | "empaque" | "publicidad" | "otro";
 export type PaymentStatus = "pagado" | "con_abonos" | "completado" | "cancelado";
+export type AuthorizedEmailStatus = "pendiente" | "activo" | "revocado";
 
 export interface Database {
   public: {
@@ -28,15 +32,29 @@ export interface Database {
       profiles: {
         Row: {
           id: string;
-          slot: ProfileSlot;
           display_name: string;
           color: ProfileColor;
           user_id: string | null;
           claimed_at: string | null;
+          is_admin: boolean;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
         Update: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
+        Relationships: [];
+      };
+      authorized_emails: {
+        Row: {
+          id: string;
+          email: string;
+          invited_by: string | null;
+          invited_at: string;
+          status: AuthorizedEmailStatus;
+        };
+        Insert: Partial<Database["public"]["Tables"]["authorized_emails"]["Row"]> & {
+          email: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["authorized_emails"]["Row"]>;
         Relationships: [];
       };
       categories: {
@@ -301,6 +319,38 @@ export interface Database {
       current_profile_id: {
         Args: Record<string, never>;
         Returns: string;
+      };
+      check_email_authorization: {
+        Args: { p_email: string };
+        Returns: string | null;
+      };
+      mark_email_active: {
+        Args: { p_email: string };
+        Returns: void;
+      };
+      add_authorized_email: {
+        Args: { p_email: string };
+        Returns: void;
+      };
+      revoke_authorized_email: {
+        Args: { p_email: string };
+        Returns: void;
+      };
+      create_own_profile: {
+        Args: { p_display_name: string; p_color: string };
+        Returns: string;
+      };
+      list_authorized_emails: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          email: string;
+          status: AuthorizedEmailStatus;
+          invited_at: string;
+          invited_by_name: string | null;
+          profile_display_name: string | null;
+          profile_color: string | null;
+        }[];
       };
       mark_order_received: {
         Args: { p_order_id: string };

@@ -6,7 +6,7 @@ import { MovementHistory } from "@/components/inventario/movement-history";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils/cn";
 
-type Vista = "mio" | "otra" | "todo";
+type Vista = "mio" | "todo" | string; // string suelto = el profile_id de una persona específica
 
 export default async function InventarioPage({
   searchParams,
@@ -14,7 +14,6 @@ export default async function InventarioPage({
   searchParams: Promise<{ vista?: string }>;
 }) {
   const { vista: vistaParam } = await searchParams;
-  const vista: Vista = vistaParam === "mio" || vistaParam === "otra" ? vistaParam : "todo";
 
   const profile = await getSessionProfile();
   const supabase = await createClient();
@@ -33,11 +32,21 @@ export default async function InventarioPage({
         .limit(50),
     ]);
 
+  const otherProfiles = (profiles ?? []).filter((p) => p.id !== profile.id);
+  const otherProfileIds = new Set(otherProfiles.map((p) => p.id));
+
+  // "vista" acepta "mio", "todo", o el id de cualquier otra persona del
+  // equipo — si viene algo que ya no es válido (ej. alguien que ya no
+  // está en el equipo), volvemos a "todo".
+  const vista: Vista =
+    vistaParam === "mio" || vistaParam === "todo" || (vistaParam && otherProfileIds.has(vistaParam))
+      ? vistaParam
+      : "todo";
+
   const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
   const productById = new Map((products ?? []).map((p) => [p.id, p]));
   const variantById = new Map((variants ?? []).map((v) => [v.id, v]));
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
-  const otherProfile = (profiles ?? []).find((p) => p.id !== profile.id) ?? null;
 
   const stockByVariant = new Map<string, typeof variantStock>();
   for (const s of variantStock ?? []) {
@@ -55,13 +64,20 @@ export default async function InventarioPage({
 
   function stockFor(variantId: string, threshold: number) {
     const rows = stockByVariant.get(variantId) ?? [];
-    const mine = rows.find((r) => r.profile_id === profile.id);
-    const other = otherProfile ? rows.find((r) => r.profile_id === otherProfile.id) : undefined;
 
-    if (vista === "mio") return { stock: mine?.stock ?? 0, threshold: mine?.min_stock ?? threshold };
-    if (vista === "otra")
-      return { stock: other?.stock ?? 0, threshold: other?.min_stock ?? threshold };
-    return { stock: (mine?.stock ?? 0) + (other?.stock ?? 0), threshold };
+    if (vista === "mio") {
+      const mine = rows.find((r) => r.profile_id === profile.id);
+      return { stock: mine?.stock ?? 0, threshold: mine?.min_stock ?? threshold };
+    }
+
+    if (vista === "todo") {
+      const total = rows.reduce((sum, r) => sum + r.stock, 0);
+      return { stock: total, threshold };
+    }
+
+    // vista es el profile_id de una persona específica del equipo
+    const row = rows.find((r) => r.profile_id === vista);
+    return { stock: row?.stock ?? 0, threshold: row?.min_stock ?? threshold };
   }
 
   const groups: StockGroup[] = (products ?? []).map((p) => ({
@@ -75,9 +91,9 @@ export default async function InventarioPage({
     })),
   }));
 
-  const tabs: { value: Vista; label: string }[] = [
+  const tabs: { value: string; label: string }[] = [
     { value: "mio", label: "Mi stock" },
-    { value: "otra", label: `Stock de ${otherProfile?.display_name ?? "la otra"}` },
+    ...otherProfiles.map((p) => ({ value: p.id, label: `Stock de ${p.display_name}` })),
     { value: "todo", label: "Todo el negocio" },
   ];
 
@@ -88,7 +104,7 @@ export default async function InventarioPage({
         <p className="mt-1 text-sm text-ink/60">Stock actual de todas las variantes de color.</p>
       </div>
 
-      <div className="flex w-fit gap-1 rounded-full border border-gold/20 bg-panel/30 p-1">
+      <div className="flex w-fit flex-wrap gap-1 rounded-full border border-gold/20 bg-panel/30 p-1">
         {tabs.map((tab) => (
           <Link
             key={tab.value}
@@ -104,7 +120,7 @@ export default async function InventarioPage({
       </div>
 
       <Card className="p-0">
-        <StockTable groups={groups} canAdjust={vista !== "otra"} />
+        <StockTable groups={groups} canAdjust={vista === "mio" || vista === "todo"} />
       </Card>
 
       <Card>

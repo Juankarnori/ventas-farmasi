@@ -1,38 +1,54 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import type { ProfileSlot } from "@/lib/types/database.types";
 
 export interface PendingLoanForBalance {
   variantId: string;
   label: string;
   quantity: number;
-  fromSlot: ProfileSlot;
-  toSlot: ProfileSlot;
+  fromProfileId: string;
+  fromName: string;
+  toProfileId: string;
+  toName: string;
 }
 
-export function SaldoNetoCard({
-  loans,
-  displayNames,
-}: {
-  loans: PendingLoanForBalance[];
-  displayNames: Record<ProfileSlot, string>;
-}) {
-  // Neto por variante: positivo = "yo" le debe a "mama" ese color,
-  // negativo = "mama" le debe a "yo". Solo tiene sentido netear dentro
-  // de la misma variante (2 labiales "Coral" prestados no cancelan 2
-  // labiales "Nude" prestados en la otra dirección, ni un shampoo).
-  const netByVariant = new Map<string, number>();
+interface PairAcc {
+  variantId: string;
+  label: string;
+  aId: string;
+  aName: string;
+  bId: string;
+  bName: string;
+  net: number;
+}
+
+export function SaldoNetoCard({ loans }: { loans: PendingLoanForBalance[] }) {
+  // Neto por variante Y por par de personas: solo tiene sentido netear
+  // dentro de la misma variante (2 labiales "Coral" prestados no cancelan
+  // 2 labiales "Nude", ni un shampoo) Y dentro del mismo par (un préstamo
+  // entre Ana y Carlos no cancela otro entre Ana y Sofía) — con más de 2
+  // personas puede haber varios pares distintos a la vez.
+  const byKey = new Map<string, PairAcc>();
+
   for (const loan of loans) {
-    const sign = loan.toSlot === "yo" ? 1 : -1;
-    netByVariant.set(loan.variantId, (netByVariant.get(loan.variantId) ?? 0) + sign * loan.quantity);
+    const [aId, aName, bId, bName] =
+      loan.fromProfileId < loan.toProfileId
+        ? [loan.fromProfileId, loan.fromName, loan.toProfileId, loan.toName]
+        : [loan.toProfileId, loan.toName, loan.fromProfileId, loan.fromName];
+
+    const key = `${loan.variantId}:${aId}:${bId}`;
+    const acc = byKey.get(key) ?? { variantId: loan.variantId, label: loan.label, aId, aName, bId, bName, net: 0 };
+    const sign = loan.fromProfileId === aId ? 1 : -1;
+    acc.net += sign * loan.quantity;
+    byKey.set(key, acc);
   }
 
-  const labelByVariant = new Map(loans.map((l) => [l.variantId, l.label]));
-  const balances = Array.from(netByVariant.entries())
-    .filter(([, net]) => net !== 0)
-    .map(([variantId, net]) => ({
-      variantId,
-      label: labelByVariant.get(variantId) ?? "—",
-      net,
+  const balances = Array.from(byKey.entries())
+    .filter(([, acc]) => acc.net !== 0)
+    .map(([key, acc]) => ({
+      key,
+      label: acc.label,
+      quantity: Math.abs(acc.net),
+      debtorName: acc.net > 0 ? acc.bName : acc.aName,
+      creditorName: acc.net > 0 ? acc.aName : acc.bName,
     }));
 
   return (
@@ -45,13 +61,12 @@ export function SaldoNetoCard({
       ) : (
         <ul className="flex flex-col gap-2">
           {balances.map((b) => (
-            <li key={b.variantId} className="flex items-center justify-between text-sm">
+            <li key={b.key} className="flex items-center justify-between text-sm">
               <span className="text-ink">
-                {b.net > 0 ? displayNames.yo : displayNames.mama} le debe a{" "}
-                {b.net > 0 ? displayNames.mama : displayNames.yo}
+                {b.debtorName} le debe a {b.creditorName}
               </span>
               <span className="font-mono tabular-nums text-ink/70">
-                {Math.abs(b.net)} × {b.label}
+                {b.quantity} × {b.label}
               </span>
             </li>
           ))}

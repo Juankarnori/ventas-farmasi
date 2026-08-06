@@ -3,7 +3,7 @@
 create table categories (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
-  color text not null default '#5F8FB8',
+  color text not null default '#0E5C52',
   sort_order int not null default 0,
   created_at timestamptz not null default now()
 );

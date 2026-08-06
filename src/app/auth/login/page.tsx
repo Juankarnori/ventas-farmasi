@@ -33,7 +33,7 @@ export default async function LoginPage({
         </button>
       </form>
 
-      <p className="text-xs text-ink/50">Solo para las cuentas de Mamá y Yo.</p>
+      <p className="text-xs text-ink/50">Solo para cuentas de Google autorizadas por la administradora.</p>
     </div>
   );
 }

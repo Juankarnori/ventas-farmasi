@@ -10,23 +10,29 @@ export interface LowStockItem {
   stock: number;
 }
 
+export interface DebtMessage {
+  debtorName: string;
+  creditorName: string;
+  amount: number;
+}
+
 export function AlertsPanel({
   lowStockProducts,
   pendingLoansCount,
-  debtMessage,
+  debtMessages = [],
   accountsReceivable = 0,
   undeliveredCount = 0,
 }: {
   lowStockProducts: LowStockItem[];
   pendingLoansCount: number;
-  debtMessage?: { debtorName: string; creditorName: string; amount: number } | null;
+  debtMessages?: DebtMessage[];
   accountsReceivable?: number;
   undeliveredCount?: number;
 }) {
   if (
     lowStockProducts.length === 0 &&
     pendingLoansCount === 0 &&
-    !debtMessage &&
+    debtMessages.length === 0 &&
     accountsReceivable === 0 &&
     undeliveredCount === 0
   ) {
@@ -71,16 +77,18 @@ export function AlertsPanel({
           </div>
         )}
 
-        {debtMessage && (
-          <div>
-            <Link
-              href="/prestamos"
-              className="flex items-center gap-2 text-sm font-medium text-ink hover:underline"
-            >
-              <Wallet className="h-4 w-4 text-gold" />
-              {debtMessage.debtorName} le debe a {debtMessage.creditorName}{" "}
-              {formatCurrency(debtMessage.amount)}
-            </Link>
+        {debtMessages.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            {debtMessages.map((d, i) => (
+              <Link
+                key={`${d.debtorName}:${d.creditorName}:${i}`}
+                href="/prestamos"
+                className="flex items-center gap-2 text-sm font-medium text-ink hover:underline"
+              >
+                <Wallet className="h-4 w-4 text-gold" />
+                {d.debtorName} le debe a {d.creditorName} {formatCurrency(d.amount)}
+              </Link>
+            ))}
           </div>
         )}
 

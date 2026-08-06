@@ -22,7 +22,7 @@ export async function signInWithGoogle() {
   redirect(data.url);
 }
 
-export async function claimProfile(profileId: string) {
+export async function createOwnProfile(formData: FormData) {
   const supabase = await createClient();
 
   const {
@@ -33,14 +33,19 @@ export async function claimProfile(profileId: string) {
     redirect("/auth/login");
   }
 
-  // La RLS (profiles_claim_update) es la que realmente decide si esto
-  // se permite: solo pisa filas con user_id null, solo con el propio
-  // uid, y solo si ese uid no tiene ya otro perfil.
-  const { error } = await supabase
-    .from("profiles")
-    .update({ user_id: user.id, claimed_at: new Date().toISOString() })
-    .eq("id", profileId)
-    .is("user_id", null);
+  const displayName = String(formData.get("display_name") ?? "").trim();
+  const color = String(formData.get("color") ?? "");
+
+  if (!displayName) {
+    redirect("/auth/claim?error=1");
+  }
+
+  // create_own_profile valida autorización + color + que no tenga ya un
+  // perfil, y marca el correo como 'activo' en el mismo paso atómico.
+  const { error } = await supabase.rpc("create_own_profile", {
+    p_display_name: displayName,
+    p_color: color,
+  });
 
   if (error) {
     redirect("/auth/claim?error=1");
