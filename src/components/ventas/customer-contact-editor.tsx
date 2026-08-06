@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pencil, X } from "lucide-react";
 import { Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { WhatsAppButton } from "@/components/shared/whatsapp-button";
 import { updateCustomerContact } from "@/app/(app)/ventas/clientes/actions";
 
 export function CustomerContactEditor({
@@ -23,7 +24,10 @@ export function CustomerContactEditor({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl text-ink">{name}</h1>
-          <p className="mt-1 text-sm text-ink/60">{phone ?? "Sin teléfono"}</p>
+          <div className="mt-1 flex items-center gap-1.5">
+            <p className="text-sm text-ink/60">{phone ?? "Sin teléfono"}</p>
+            <WhatsAppButton phone={phone} />
+          </div>
         </div>
         <button
           type="button"
