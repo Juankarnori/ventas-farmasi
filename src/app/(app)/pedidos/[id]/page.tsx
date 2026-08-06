@@ -34,6 +34,8 @@ export default async function PedidoDetallePage({
   const variantById = new Map((variants ?? []).map((v) => [v.id, v]));
   const markReceivedWithId = markOrderReceived.bind(null, id);
 
+  const totalUnits = (items ?? []).reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <div className="mx-auto max-w-2xl">
       <Link
@@ -89,7 +91,7 @@ export default async function PedidoDetallePage({
       </Card>
 
       <p className="mt-4 text-right text-sm text-ink/60">
-        Total del pedido:{" "}
+        {totalUnits} producto{totalUnits === 1 ? "" : "s"} · Total del pedido:{" "}
         <span className="font-mono text-base tabular-nums text-ink">
           {formatCurrency(order.total_cost)}
         </span>

@@ -16,6 +16,17 @@ export default async function PedidosPage() {
     .select("*")
     .order("order_date", { ascending: false });
 
+  const orderIds = (orders ?? []).map((o) => o.id);
+  const { data: items } =
+    orderIds.length > 0
+      ? await supabase.from("order_items").select("order_id, quantity").in("order_id", orderIds)
+      : { data: [] };
+
+  const unitsByOrder = new Map<string, number>();
+  for (const item of items ?? []) {
+    unitsByOrder.set(item.order_id, (unitsByOrder.get(item.order_id) ?? 0) + item.quantity);
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -38,6 +49,7 @@ export default async function PedidosPage() {
                 <Tr>
                   <Th className="pl-5">Fecha</Th>
                   <Th>Estado</Th>
+                  <Th className="text-right">Productos</Th>
                   <Th className="pr-5 text-right">Total</Th>
                 </Tr>
               </Thead>
@@ -52,6 +64,7 @@ export default async function PedidosPage() {
                     <Td>
                       <OrderStatusBadge status={order.status} />
                     </Td>
+                    <Td numeric>{unitsByOrder.get(order.id) ?? 0}</Td>
                     <Td numeric className="pr-5">
                       {formatCurrency(order.total_cost)}
                     </Td>
