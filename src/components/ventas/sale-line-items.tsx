@@ -5,6 +5,7 @@ import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils/currency";
+import { CategoryLineFilter } from "@/components/shared/category-line-filter";
 
 export interface SellableVariant {
   id: string;
@@ -17,6 +18,8 @@ export interface SellableProduct {
   id: string;
   name: string;
   sale_price: number;
+  category_id: string | null;
+  line_id: string | null;
   variants: SellableVariant[];
 }
 
@@ -32,8 +35,45 @@ function effectivePrice(product: SellableProduct, variant: SellableVariant) {
   return variant.price_override ?? product.sale_price;
 }
 
-export function SaleLineItems({ products }: { products: SellableProduct[] }) {
+export function SaleLineItems({
+  products,
+  categories,
+  lines,
+}: {
+  products: SellableProduct[];
+  categories: { id: string; name: string }[];
+  lines: { id: string; name: string; category_id: string }[];
+}) {
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+
+  const [filterCategoryId, setFilterCategoryId] = useState("");
+  const [filterLineId, setFilterLineId] = useState("");
+
+  const filteredProducts = useMemo(
+    () =>
+      products.filter((p) => {
+        if (filterCategoryId && p.category_id !== filterCategoryId) return false;
+        if (filterLineId && p.line_id !== filterLineId) return false;
+        return true;
+      }),
+    [products, filterCategoryId, filterLineId],
+  );
+
+  function onFilterCategoryChange(id: string) {
+    setFilterCategoryId(id);
+    setFilterLineId("");
+  }
+
+  // Las opciones del select de un renglón son la lista filtrada, más su
+  // propio producto ya elegido si el filtro cambió después y ya no lo
+  // incluye (para no romper una fila que ya estaba armada).
+  function optionsFor(productId: string) {
+    if (filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId)) {
+      return filteredProducts;
+    }
+    const current = productById.get(productId);
+    return current ? [current, ...filteredProducts] : filteredProducts;
+  }
 
   function firstRowFor(product: SellableProduct): Omit<Row, "key"> {
     const variant = product.variants[0];
@@ -51,8 +91,9 @@ export function SaleLineItems({ products }: { products: SellableProduct[] }) {
   const [nextKey, setNextKey] = useState(1);
 
   function addRow() {
-    if (products.length === 0) return;
-    setRows((r) => [...r, { key: nextKey, ...firstRowFor(products[0]) }]);
+    const pool = filteredProducts.length > 0 ? filteredProducts : products;
+    if (pool.length === 0) return;
+    setRows((r) => [...r, { key: nextKey, ...firstRowFor(pool[0]) }]);
     setNextKey((k) => k + 1);
   }
 
@@ -98,6 +139,15 @@ export function SaleLineItems({ products }: { products: SellableProduct[] }) {
     <div className="flex flex-col gap-3">
       <input type="hidden" name="items" value={itemsJson} />
 
+      <CategoryLineFilter
+        categories={categories}
+        lines={lines}
+        categoryId={filterCategoryId}
+        lineId={filterLineId}
+        onCategoryChange={onFilterCategoryChange}
+        onLineChange={setFilterLineId}
+      />
+
       {rows.map((row) => {
         const product = productById.get(row.product_id);
         const variant = product?.variants.find((v) => v.id === row.variant_id);
@@ -112,7 +162,7 @@ export function SaleLineItems({ products }: { products: SellableProduct[] }) {
                   value={row.product_id}
                   onChange={(e) => onProductChange(row.key, e.target.value)}
                 >
-                  {products.map((p) => (
+                  {optionsFor(row.product_id).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>

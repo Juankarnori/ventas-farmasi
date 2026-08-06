@@ -4,18 +4,31 @@ import { useState } from "react";
 import { Label, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SaleLineItems, type SellableProduct } from "./sale-line-items";
+import { CustomerCombobox } from "./customer-combobox";
+import type { CustomerOption } from "@/app/(app)/ventas/clientes/actions";
 import { todayISO } from "@/lib/utils/date";
 
 export function SaleForm({
   products,
+  categories,
+  lines,
+  customers,
   saleAction,
   apartadoAction,
 }: {
   products: SellableProduct[];
+  categories: { id: string; name: string }[];
+  lines: { id: string; name: string; category_id: string }[];
+  customers: CustomerOption[];
   saleAction: (formData: FormData) => void | Promise<void>;
   apartadoAction: (formData: FormData) => void | Promise<void>;
 }) {
   const [isApartado, setIsApartado] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState("");
+
+  function onCustomerSelect(customer: CustomerOption | null) {
+    setCustomerPhone(customer?.phone ?? "");
+  }
 
   return (
     <form action={isApartado ? apartadoAction : saleAction} className="flex flex-col gap-5">
@@ -40,26 +53,24 @@ export function SaleForm({
           <Label htmlFor="sale_date">Fecha</Label>
           <Input id="sale_date" name="sale_date" type="date" defaultValue={todayISO()} required />
         </div>
-        {isApartado ? (
-          <>
-            <div className="min-w-[200px] flex-1">
-              <Label htmlFor="customer_name">Nombre de la clienta</Label>
-              <Input id="customer_name" name="customer_name" placeholder="Nombre de la clienta" required />
-            </div>
-            <div className="w-44">
-              <Label htmlFor="customer_phone">Teléfono (opcional)</Label>
-              <Input id="customer_phone" name="customer_phone" placeholder="Ej: 11 5555 5555" />
-            </div>
-          </>
-        ) : (
-          <div className="min-w-[200px] flex-1">
-            <Label htmlFor="customer_name">Cliente (opcional)</Label>
-            <Input id="customer_name" name="customer_name" placeholder="Nombre de la clienta" />
+        <div className="min-w-[220px] flex-1">
+          <CustomerCombobox customers={customers} required={isApartado} onSelect={onCustomerSelect} />
+        </div>
+        {isApartado && (
+          <div className="w-44">
+            <Label htmlFor="customer_phone">Teléfono (opcional)</Label>
+            <Input
+              id="customer_phone"
+              name="customer_phone"
+              placeholder="Ej: 11 5555 5555"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+            />
           </div>
         )}
       </div>
 
-      <SaleLineItems products={products} />
+      <SaleLineItems products={products} categories={categories} lines={lines} />
 
       <Button type="submit" disabled={products.length === 0}>
         {isApartado ? "Crear apartado" : "Registrar venta"}

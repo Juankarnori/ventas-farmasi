@@ -11,6 +11,7 @@ export async function createSale(formData: FormData) {
 
   const saleDate = String(formData.get("sale_date") ?? "");
   const customerName = String(formData.get("customer_name") ?? "").trim() || null;
+  const customerId = String(formData.get("customer_id") ?? "").trim() || null;
   const itemsRaw = String(formData.get("items") ?? "[]");
 
   let items: unknown;
@@ -28,6 +29,7 @@ export async function createSale(formData: FormData) {
     p_customer_name: customerName,
     p_sale_date: saleDate,
     p_items: items,
+    p_customer_id: customerId,
   });
 
   if (error) {
@@ -47,6 +49,7 @@ export async function createApartado(formData: FormData) {
   const saleDate = String(formData.get("sale_date") ?? "");
   const customerName = String(formData.get("customer_name") ?? "").trim();
   const customerPhone = String(formData.get("customer_phone") ?? "").trim() || null;
+  const customerId = String(formData.get("customer_id") ?? "").trim() || null;
   const itemsRaw = String(formData.get("items") ?? "[]");
 
   if (!customerName) {
@@ -69,6 +72,7 @@ export async function createApartado(formData: FormData) {
     p_customer_phone: customerPhone,
     p_sale_date: saleDate,
     p_items: items,
+    p_customer_id: customerId,
   });
 
   if (error) {

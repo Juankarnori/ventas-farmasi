@@ -5,6 +5,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils/currency";
+import { CategoryLineFilter } from "@/components/shared/category-line-filter";
 
 export interface OrderableVariant {
   id: string;
@@ -16,6 +17,8 @@ export interface OrderableProduct {
   id: string;
   name: string;
   cost_price: number;
+  category_id: string | null;
+  line_id: string | null;
   variants: OrderableVariant[];
 }
 
@@ -31,8 +34,42 @@ function effectiveCost(product: OrderableProduct, variant: OrderableVariant) {
   return variant.cost_override ?? product.cost_price;
 }
 
-export function OrderItemsEditor({ products }: { products: OrderableProduct[] }) {
+export function OrderItemsEditor({
+  products,
+  categories,
+  lines,
+}: {
+  products: OrderableProduct[];
+  categories: { id: string; name: string }[];
+  lines: { id: string; name: string; category_id: string }[];
+}) {
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+
+  const [filterCategoryId, setFilterCategoryId] = useState("");
+  const [filterLineId, setFilterLineId] = useState("");
+
+  const filteredProducts = useMemo(
+    () =>
+      products.filter((p) => {
+        if (filterCategoryId && p.category_id !== filterCategoryId) return false;
+        if (filterLineId && p.line_id !== filterLineId) return false;
+        return true;
+      }),
+    [products, filterCategoryId, filterLineId],
+  );
+
+  function onFilterCategoryChange(id: string) {
+    setFilterCategoryId(id);
+    setFilterLineId("");
+  }
+
+  function optionsFor(productId: string) {
+    if (filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId)) {
+      return filteredProducts;
+    }
+    const current = productById.get(productId);
+    return current ? [current, ...filteredProducts] : filteredProducts;
+  }
 
   function firstRowFor(product: OrderableProduct): Omit<Row, "key"> {
     const variant = product.variants[0];
@@ -50,8 +87,9 @@ export function OrderItemsEditor({ products }: { products: OrderableProduct[] })
   const [nextKey, setNextKey] = useState(1);
 
   function addRow() {
-    if (products.length === 0) return;
-    setRows((r) => [...r, { key: nextKey, ...firstRowFor(products[0]) }]);
+    const pool = filteredProducts.length > 0 ? filteredProducts : products;
+    if (pool.length === 0) return;
+    setRows((r) => [...r, { key: nextKey, ...firstRowFor(pool[0]) }]);
     setNextKey((k) => k + 1);
   }
 
@@ -97,6 +135,15 @@ export function OrderItemsEditor({ products }: { products: OrderableProduct[] })
     <div className="flex flex-col gap-3">
       <input type="hidden" name="items" value={itemsJson} />
 
+      <CategoryLineFilter
+        categories={categories}
+        lines={lines}
+        categoryId={filterCategoryId}
+        lineId={filterLineId}
+        onCategoryChange={onFilterCategoryChange}
+        onLineChange={setFilterLineId}
+      />
+
       {rows.map((row) => {
         const product = productById.get(row.product_id);
 
@@ -108,7 +155,7 @@ export function OrderItemsEditor({ products }: { products: OrderableProduct[] })
                 value={row.product_id}
                 onChange={(e) => onProductChange(row.key, e.target.value)}
               >
-                {products.map((p) => (
+                {optionsFor(row.product_id).map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>

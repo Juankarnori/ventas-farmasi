@@ -200,12 +200,29 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["order_items"]["Row"]>;
         Relationships: [];
       };
+      customers: {
+        Row: {
+          id: string;
+          name: string;
+          phone: string | null;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["customers"]["Row"]> & {
+          name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["customers"]["Row"]>;
+        Relationships: [];
+      };
       sales: {
         Row: {
           id: string;
           sale_date: string;
           customer_name: string | null;
           customer_phone: string | null;
+          customer_id: string | null;
           seller_profile_id: string;
           payment_status: PaymentStatus;
           total_price: number;
@@ -368,6 +385,7 @@ export interface Database {
           p_customer_name: string | null;
           p_sale_date: string;
           p_items: { variant_id: string; quantity: number; sale_price: number }[];
+          p_customer_id?: string | null;
         };
         Returns: string;
       };
@@ -403,6 +421,7 @@ export interface Database {
           p_customer_phone: string | null;
           p_sale_date: string;
           p_items: { variant_id: string; quantity: number; sale_price: number }[];
+          p_customer_id?: string | null;
         };
         Returns: string;
       };

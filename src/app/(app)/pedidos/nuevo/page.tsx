@@ -6,12 +6,17 @@ import { createOrder } from "../actions";
 
 export default async function NuevoPedidoPage() {
   const supabase = await createClient();
-  const [{ data: products }, { data: variants }] = await Promise.all([
-    supabase.from("products").select("id, name, cost_price").order("name", { ascending: true }),
+  const [{ data: products }, { data: variants }, { data: categories }, { data: lines }] = await Promise.all([
+    supabase
+      .from("products")
+      .select("id, name, cost_price, category_id, line_id")
+      .order("name", { ascending: true }),
     supabase
       .from("product_variants")
       .select("id, product_id, color_name, cost_override")
       .order("color_name", { ascending: true }),
+    supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),
+    supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),
   ]);
 
   const variantsByProduct = new Map<string, typeof variants>();
@@ -34,7 +39,12 @@ export default async function NuevoPedidoPage() {
         <ArrowLeft className="h-4 w-4" /> Volver a pedidos
       </Link>
       <h1 className="mb-6 font-display text-2xl text-ink">Nuevo pedido</h1>
-      <OrderForm products={orderableProducts} action={createOrder} />
+      <OrderForm
+        products={orderableProducts}
+        categories={categories ?? []}
+        lines={lines ?? []}
+        action={createOrder}
+      />
     </div>
   );
 }

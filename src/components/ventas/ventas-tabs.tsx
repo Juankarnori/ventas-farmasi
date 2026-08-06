@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
-export function VentasTabs({ active }: { active: "ventas" | "apartados" }) {
+export function VentasTabs({ active }: { active: "ventas" | "apartados" | "clientes" }) {
   const tabs = [
     { value: "ventas" as const, label: "Ventas", href: "/ventas" },
     { value: "apartados" as const, label: "Apartados", href: "/ventas/apartados" },
+    { value: "clientes" as const, label: "Clientes", href: "/ventas/clientes" },
   ];
 
   return (

@@ -8,14 +8,21 @@ import { createSale, createApartado } from "../actions";
 export default async function NuevaVentaPage() {
   const profile = await getSessionProfile();
   const supabase = await createClient();
-  const [{ data: products }, { data: variants }, { data: myStock }] = await Promise.all([
-    supabase.from("products").select("id, name, sale_price").order("name", { ascending: true }),
-    supabase
-      .from("product_variants")
-      .select("id, product_id, color_name, price_override")
-      .order("color_name", { ascending: true }),
-    supabase.from("variant_stock").select("variant_id, stock").eq("profile_id", profile.id),
-  ]);
+  const [{ data: products }, { data: variants }, { data: myStock }, { data: categories }, { data: lines }, { data: customers }] =
+    await Promise.all([
+      supabase
+        .from("products")
+        .select("id, name, sale_price, category_id, line_id")
+        .order("name", { ascending: true }),
+      supabase
+        .from("product_variants")
+        .select("id, product_id, color_name, price_override")
+        .order("color_name", { ascending: true }),
+      supabase.from("variant_stock").select("variant_id, stock").eq("profile_id", profile.id),
+      supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),
+      supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),
+      supabase.from("customers").select("id, name, phone").order("name", { ascending: true }),
+    ]);
 
   const myStockByVariant = new Map((myStock ?? []).map((s) => [s.variant_id, s.stock]));
   const variantsWithStock = (variants ?? []).map((v) => ({
@@ -43,7 +50,14 @@ export default async function NuevaVentaPage() {
         <ArrowLeft className="h-4 w-4" /> Volver a ventas
       </Link>
       <h1 className="mb-6 font-display text-2xl text-ink">Nueva venta</h1>
-      <SaleForm products={sellableProducts} saleAction={createSale} apartadoAction={createApartado} />
+      <SaleForm
+        products={sellableProducts}
+        categories={categories ?? []}
+        lines={lines ?? []}
+        customers={customers ?? []}
+        saleAction={createSale}
+        apartadoAction={createApartado}
+      />
     </div>
   );
 }
