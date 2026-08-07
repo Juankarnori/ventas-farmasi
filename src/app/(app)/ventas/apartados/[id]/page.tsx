@@ -10,7 +10,8 @@ import { formatDate } from "@/lib/utils/date";
 import { variantLabel } from "@/lib/utils/variant-label";
 import { RegisterPaymentDialog } from "@/components/ventas/register-payment-dialog";
 import { CancelApartadoButton } from "@/components/ventas/cancel-apartado-button";
-import { markItemDelivered } from "../../actions";
+import { PaymentMethodEditor } from "@/components/ventas/payment-method-editor";
+import { markItemDelivered, updateSalePaymentMethod } from "../../actions";
 
 export default async function ApartadoDetallePage({
   params,
@@ -74,6 +75,13 @@ export default async function ApartadoDetallePage({
             {formatDate(sale.sale_date)} · {profileById.get(sale.seller_profile_id)?.display_name ?? "—"}
             {sale.customer_phone && ` · ${sale.customer_phone}`}
           </p>
+          <div className="mt-1.5">
+            <PaymentMethodEditor
+              paymentMethod={sale.payment_method}
+              bankNote={sale.bank_note}
+              action={updateSalePaymentMethod.bind(null, sale.id)}
+            />
+          </div>
         </div>
         <Badge
           variant={

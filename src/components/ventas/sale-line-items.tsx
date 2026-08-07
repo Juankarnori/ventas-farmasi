@@ -31,6 +31,13 @@ interface Row {
   sale_price: number;
 }
 
+export interface SaleItemDefault {
+  product_id: string;
+  variant_id: string;
+  quantity: number;
+  sale_price: number;
+}
+
 function effectivePrice(product: SellableProduct, variant: SellableVariant) {
   return variant.price_override ?? product.sale_price;
 }
@@ -39,10 +46,18 @@ export function SaleLineItems({
   products,
   categories,
   lines,
+  defaultItems,
 }: {
   products: SellableProduct[];
   categories: { id: string; name: string }[];
   lines: { id: string; name: string; category_id: string }[];
+  // Para editar una venta existente: precarga los renglones tal cual
+  // estaban guardados en vez de arrancar con una sola fila vacía. El
+  // stock mostrado por cada variante (product.variants[].stock) ya tiene
+  // que venir ajustado por quien arma `products` — sumándole de vuelta lo
+  // que esta misma venta ya tenía de esa variante — para no mostrar un
+  // "no te alcanza" falso sobre una cantidad que en realidad ya es tuya.
+  defaultItems?: SaleItemDefault[];
 }) {
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
 
@@ -85,10 +100,15 @@ export function SaleLineItems({
     };
   }
 
-  const [rows, setRows] = useState<Row[]>(() =>
-    products.length > 0 ? [{ key: 0, ...firstRowFor(products[0]) }] : [],
+  const [rows, setRows] = useState<Row[]>(() => {
+    if (defaultItems && defaultItems.length > 0) {
+      return defaultItems.map((item, i) => ({ key: i, ...item }));
+    }
+    return products.length > 0 ? [{ key: 0, ...firstRowFor(products[0]) }] : [];
+  });
+  const [nextKey, setNextKey] = useState(() =>
+    defaultItems && defaultItems.length > 0 ? defaultItems.length : 1,
   );
-  const [nextKey, setNextKey] = useState(1);
 
   function addRow() {
     const pool = filteredProducts.length > 0 ? filteredProducts : products;

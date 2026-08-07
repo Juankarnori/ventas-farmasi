@@ -50,6 +50,8 @@ export default async function ApartadosPage() {
       balance: balance?.balance ?? s.total_price,
       status: s.payment_status,
       allDelivered: deliveredBySale.get(s.id) ?? true,
+      paymentMethod: s.payment_method,
+      bankNote: s.bank_note,
     };
   });
 

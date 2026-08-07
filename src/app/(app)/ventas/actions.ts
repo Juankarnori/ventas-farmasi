@@ -4,6 +4,19 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
+import type { PaymentMethod } from "@/lib/types/database.types";
+
+function readPaymentMethod(formData: FormData): { method: PaymentMethod; bankNote: string | null } {
+  const raw = String(formData.get("payment_method") ?? "efectivo");
+  if (raw !== "efectivo" && raw !== "transferencia") {
+    throw new Error("Método de pago inválido");
+  }
+  const bankNote = String(formData.get("bank_note") ?? "").trim() || null;
+  // El `if` de arriba ya garantiza en runtime que `raw` es una de las dos
+  // opciones válidas — la aserción es segura, TS no puede angostar
+  // `string` a un literal solo con comparaciones `!==`.
+  return { method: raw as PaymentMethod, bankNote };
+}
 
 export async function createSale(formData: FormData) {
   await getSessionProfile();
@@ -13,6 +26,7 @@ export async function createSale(formData: FormData) {
   const customerName = String(formData.get("customer_name") ?? "").trim() || null;
   const customerId = String(formData.get("customer_id") ?? "").trim() || null;
   const itemsRaw = String(formData.get("items") ?? "[]");
+  const { method, bankNote } = readPaymentMethod(formData);
 
   let items: unknown;
   try {
@@ -30,6 +44,8 @@ export async function createSale(formData: FormData) {
     p_sale_date: saleDate,
     p_items: items,
     p_customer_id: customerId,
+    p_payment_method: method,
+    p_bank_note: bankNote,
   });
 
   if (error) {
@@ -51,6 +67,7 @@ export async function createApartado(formData: FormData) {
   const customerPhone = String(formData.get("customer_phone") ?? "").trim() || null;
   const customerId = String(formData.get("customer_id") ?? "").trim() || null;
   const itemsRaw = String(formData.get("items") ?? "[]");
+  const { method, bankNote } = readPaymentMethod(formData);
 
   if (!customerName) {
     throw new Error("El apartado necesita el nombre de la clienta");
@@ -73,6 +90,8 @@ export async function createApartado(formData: FormData) {
     p_sale_date: saleDate,
     p_items: items,
     p_customer_id: customerId,
+    p_payment_method: method,
+    p_bank_note: bankNote,
   });
 
   if (error) {
@@ -84,6 +103,70 @@ export async function createApartado(formData: FormData) {
   revalidatePath("/inventario");
   revalidatePath("/catalogo");
   redirect(`/ventas/apartados/${saleId}`);
+}
+
+// Edición completa (productos + método de pago) de una venta de contado
+// ya registrada — el servidor rechaza esto si la venta es un apartado
+// (ver update_sale_items en 0025_sale_payment_method_and_edit.sql).
+export async function updateSaleItems(saleId: string, formData: FormData) {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const itemsRaw = String(formData.get("items") ?? "[]");
+  const { method, bankNote } = readPaymentMethod(formData);
+
+  let items: unknown;
+  try {
+    items = JSON.parse(itemsRaw);
+  } catch {
+    throw new Error("Los productos de la venta no son válidos");
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error("La venta necesita al menos un producto");
+  }
+
+  const { error } = await supabase.rpc("update_sale_items", {
+    p_sale_id: saleId,
+    p_items: items,
+    p_payment_method: method,
+    p_bank_note: bankNote,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/ventas/${saleId}`);
+  revalidatePath("/ventas");
+  revalidatePath("/inventario");
+  revalidatePath("/catalogo");
+  revalidatePath("/finanzas");
+}
+
+// Edición liviana de método de pago — la única que aplica a un apartado
+// (no toca productos ni stock, así que no tiene las restricciones de
+// update_sale_items).
+export async function updateSalePaymentMethod(saleId: string, formData: FormData) {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { method, bankNote } = readPaymentMethod(formData);
+
+  const { error } = await supabase.rpc("update_sale_payment_method", {
+    p_sale_id: saleId,
+    p_payment_method: method,
+    p_bank_note: bankNote,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/ventas/${saleId}`);
+  revalidatePath(`/ventas/apartados/${saleId}`);
+  revalidatePath("/ventas");
+  revalidatePath("/ventas/apartados");
 }
 
 export async function registerPayment(saleId: string, formData: FormData) {

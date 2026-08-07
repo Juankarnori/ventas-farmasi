@@ -114,11 +114,15 @@ export default async function VentasPage({
           // puedan desincronizarse.
           total: s.total_price,
           profit: saleProfit,
+          paymentStatus: s.payment_status,
+          paymentMethod: s.payment_method,
+          bankNote: s.bank_note,
         } satisfies SaleCardData;
       })
       .sort((a, b) => (a.saleDate < b.saleDate ? 1 : -1));
   }
 
+  const totalSales = cards.reduce((sum, c) => sum + c.total, 0);
   const totalProfit = cards.reduce((sum, c) => sum + c.profit, 0);
 
   return (
@@ -153,7 +157,11 @@ export default async function VentasPage({
                 ))}
               </div>
               <p className="mt-4 text-right text-sm text-ink/60">
-                Ganancia total:{" "}
+                Total de ventas:{" "}
+                <span className="font-mono text-base tabular-nums text-ink">
+                  {formatCurrency(totalSales)}
+                </span>{" "}
+                · Ganancia total:{" "}
                 <span className="font-mono text-base tabular-nums text-ink">
                   {formatCurrency(totalProfit)}
                 </span>

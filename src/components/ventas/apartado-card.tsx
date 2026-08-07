@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
-import type { PaymentStatus } from "@/lib/types/database.types";
+import type { PaymentMethod, PaymentStatus } from "@/lib/types/database.types";
 
 export interface ApartadoCardData {
   id: string;
@@ -14,6 +14,8 @@ export interface ApartadoCardData {
   balance: number;
   status: PaymentStatus;
   allDelivered: boolean;
+  paymentMethod: PaymentMethod;
+  bankNote: string | null;
 }
 
 export function ApartadoCard({ apartado }: { apartado: ApartadoCardData }) {
@@ -41,7 +43,9 @@ export function ApartadoCard({ apartado }: { apartado: ApartadoCardData }) {
         <Badge variant={badgeVariant}>{badgeLabel}</Badge>
       </div>
       <p className="mt-1 text-xs text-ink/50">
-        {formatDate(apartado.saleDate)} · {apartado.sellerName}
+        {formatDate(apartado.saleDate)} · {apartado.sellerName} ·{" "}
+        {apartado.paymentMethod === "transferencia" ? "🏦 Transferencia" : "💵 Efectivo"}
+        {apartado.bankNote && ` (${apartado.bankNote})`}
       </p>
 
       <div className="mt-3 grid grid-cols-3 gap-2 text-sm">

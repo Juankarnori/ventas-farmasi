@@ -27,6 +27,7 @@ export type PaymentStatus = "pagado" | "con_abonos" | "completado" | "cancelado"
 export type AuthorizedEmailStatus = "pendiente" | "activo" | "revocado";
 export type FollowUpTriggerType = "despues_de_venta" | "cumpleanos";
 export type FollowUpTaskStatus = "pendiente" | "hecho" | "omitido";
+export type PaymentMethod = "efectivo" | "transferencia";
 
 export interface Database {
   public: {
@@ -270,6 +271,8 @@ export interface Database {
           seller_profile_id: string;
           payment_status: PaymentStatus;
           total_price: number;
+          payment_method: PaymentMethod;
+          bank_note: string | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["sales"]["Row"]> & {
@@ -430,6 +433,8 @@ export interface Database {
           p_sale_date: string;
           p_items: { variant_id: string; quantity: number; sale_price: number }[];
           p_customer_id?: string | null;
+          p_payment_method?: PaymentMethod;
+          p_bank_note?: string | null;
         };
         Returns: string;
       };
@@ -466,6 +471,8 @@ export interface Database {
           p_sale_date: string;
           p_items: { variant_id: string; quantity: number; sale_price: number }[];
           p_customer_id?: string | null;
+          p_payment_method?: PaymentMethod;
+          p_bank_note?: string | null;
         };
         Returns: string;
       };
@@ -517,6 +524,19 @@ export interface Database {
       };
       run_birthday_check: {
         Args: Record<string, never>;
+        Returns: void;
+      };
+      update_sale_items: {
+        Args: {
+          p_sale_id: string;
+          p_items: { variant_id: string; quantity: number; sale_price: number }[];
+          p_payment_method?: PaymentMethod;
+          p_bank_note?: string | null;
+        };
+        Returns: void;
+      };
+      update_sale_payment_method: {
+        Args: { p_sale_id: string; p_payment_method: PaymentMethod; p_bank_note?: string | null };
         Returns: void;
       };
     };
