@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { Plus, Receipt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VentasFilters } from "@/components/ventas/ventas-filters";
-import { SaleHistoryTable, type SaleHistoryRow } from "@/components/shared/sale-history-table";
+import { SaleCard, type SaleCardData } from "@/components/ventas/sale-card";
 import { VentasTabs } from "@/components/ventas/ventas-tabs";
 import { variantLabel } from "@/lib/utils/variant-label";
+import { formatCurrency } from "@/lib/utils/currency";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
 
 export default async function VentasPage({
@@ -44,44 +44,82 @@ export default async function VentasPage({
   const { data: sales } = await salesQuery;
   const saleIds = (sales ?? []).map((s) => s.id);
 
-  let rows: SaleHistoryRow[] = [];
+  let cards: SaleCardData[] = [];
 
   if (saleIds.length > 0) {
-    let itemsQuery = supabase.from("sale_items").select("*").in("sale_id", saleIds);
-    if (producto) itemsQuery = itemsQuery.eq("product_id", producto);
-    const { data: items } = await itemsQuery;
+    // Siempre se traen TODOS los items de cada venta (nunca solo los que
+    // matchean el filtro de producto): el filtro de producto decide qué
+    // ventas califican para aparecer, pero la tarjeta de una venta que
+    // calificó muestra la venta completa — todos sus productos, el total
+    // y la ganancia reales —, no un recorte parcial que dejaría el total
+    // sin cuadrar con lo que se ve adentro.
+    const [{ data: items }, { data: variants }, { data: customers }] = await Promise.all([
+      supabase.from("sale_items").select("*").in("sale_id", saleIds),
+      supabase.from("product_variants").select("id, product_id, color_name"),
+      supabase.from("customers").select("id, name"),
+    ]);
 
-    const variantIds = (items ?? []).map((i) => i.variant_id);
-    const { data: variants } =
-      variantIds.length > 0
-        ? await supabase.from("product_variants").select("id, color_name").in("id", variantIds)
-        : { data: [] };
+    const qualifyingSaleIds = producto
+      ? new Set((items ?? []).filter((i) => i.product_id === producto).map((i) => i.sale_id))
+      : new Set(saleIds);
 
-    const saleById = new Map((sales ?? []).map((s) => [s.id, s]));
     const productById = new Map((products ?? []).map((p) => [p.id, p]));
     const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
     const variantById = new Map((variants ?? []).map((v) => [v.id, v]));
+    const customerById = new Map((customers ?? []).map((c) => [c.id, c]));
 
-    rows = (items ?? [])
-      .map((item) => {
-        const sale = saleById.get(item.sale_id);
-        if (!sale) return null;
-        const productName = productById.get(item.product_id)?.name ?? "—";
-        const colorName = variantById.get(item.variant_id)?.color_name;
+    function labelFor(item: { product_id: string; variant_id: string }) {
+      const productName = productById.get(item.product_id)?.name ?? "—";
+      const colorName = variantById.get(item.variant_id)?.color_name;
+      return colorName ? variantLabel(productName, colorName) : productName;
+    }
+
+    const itemsBySale = new Map<string, typeof items>();
+    for (const item of items ?? []) {
+      const list = itemsBySale.get(item.sale_id) ?? [];
+      list!.push(item);
+      itemsBySale.set(item.sale_id, list);
+    }
+
+    cards = (sales ?? [])
+      .filter((s) => qualifyingSaleIds.has(s.id))
+      .map((s) => {
+        const saleItems = itemsBySale.get(s.id) ?? [];
+
+        // Agrupa por variante por si el mismo color quedó en más de un
+        // renglón (no debería pasar desde el formulario, pero no cuesta
+        // nada ser robusto acá igual que en la ficha de cliente).
+        const productMap = new Map<string, { label: string; quantity: number }>();
+        let saleProfit = 0;
+        for (const item of saleItems) {
+          const entry = productMap.get(item.variant_id) ?? { label: labelFor(item), quantity: 0 };
+          entry.quantity += item.quantity;
+          productMap.set(item.variant_id, entry);
+          saleProfit += item.profit;
+        }
+
         return {
-          id: item.id,
-          saleDate: sale.sale_date,
-          customerName: sale.customer_name,
-          sellerName: profileById.get(sale.seller_profile_id)?.display_name ?? "—",
-          productName: colorName ? variantLabel(productName, colorName) : productName,
-          quantity: item.quantity,
-          salePrice: item.sale_price,
-          profit: item.profit,
-        } satisfies SaleHistoryRow;
+          id: s.id,
+          saleDate: s.sale_date,
+          // customer_id es el dato de verdad cuando la venta está
+          // vinculada a una clienta formal (ver customer-combobox.tsx);
+          // customer_name es el texto libre de respaldo para ventas
+          // anónimas o anteriores al registro de clientas.
+          customerName: (s.customer_id ? customerById.get(s.customer_id)?.name : null) ?? s.customer_name,
+          sellerName: profileById.get(s.seller_profile_id)?.display_name ?? "—",
+          products: Array.from(productMap.values()),
+          // El total ya viene calculado y guardado en la venta misma
+          // (sales.total_price) — se reusa tal cual en vez de volver a
+          // sumarlo acá, para no tener dos cálculos del mismo número que
+          // puedan desincronizarse.
+          total: s.total_price,
+          profit: saleProfit,
+        } satisfies SaleCardData;
       })
-      .filter((r): r is SaleHistoryRow => r !== null)
       .sort((a, b) => (a.saleDate < b.saleDate ? 1 : -1));
   }
+
+  const totalProfit = cards.reduce((sum, c) => sum + c.profit, 0);
 
   return (
     <div>
@@ -107,9 +145,23 @@ export default async function VentasPage({
 
       <div className="mt-6">
         {sales && sales.length > 0 ? (
-          <Card className="p-0">
-            <SaleHistoryTable rows={rows} />
-          </Card>
+          cards.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {cards.map((c) => (
+                  <SaleCard key={c.id} sale={c} />
+                ))}
+              </div>
+              <p className="mt-4 text-right text-sm text-ink/60">
+                Ganancia total:{" "}
+                <span className="font-mono text-base tabular-nums text-ink">
+                  {formatCurrency(totalProfit)}
+                </span>
+              </p>
+            </>
+          ) : (
+            <p className="py-10 text-center text-sm text-ink/50">No hay ventas para este filtro.</p>
+          )
         ) : (
           <EmptyState
             icon={Receipt}
