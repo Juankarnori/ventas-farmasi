@@ -25,6 +25,8 @@ export type StockMovementType =
   | "uso_personal";
 export type OrderStatus = "pendiente" | "recibido";
 export type LoanStatus = "pendiente" | "devuelto" | "vendido";
+export type LoanValuationType = "costo" | "pvp";
+export type LoanSettlementMethod = "efectivo" | "transferencia" | "producto";
 export type ExpenseCategory = "envio" | "empaque" | "publicidad" | "otro";
 export type PaymentStatus = "pagado" | "con_abonos" | "completado" | "cancelado";
 export type AuthorizedEmailStatus = "pendiente" | "activo" | "revocado";
@@ -213,6 +215,7 @@ export interface Database {
           phone: string | null;
           notes: string | null;
           birth_date: string | null;
+          archived_at: string | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -339,6 +342,10 @@ export interface Database {
           status: LoanStatus;
           returned_at: string | null;
           unit_cost: number;
+          unit_price: number;
+          valuation_type: LoanValuationType;
+          settlement_method: LoanSettlementMethod | null;
+          settlement_bank_note: string | null;
           debt_settled_at: string | null;
           created_by: string | null;
           created_at: string;
@@ -377,6 +384,7 @@ export interface Database {
           product_id: string;
           profile_id: string;
           quantity: number;
+          unit_cost: number | null;
           note: string | null;
           used_at: string;
           created_at: string;
@@ -472,8 +480,27 @@ export interface Database {
           p_from_profile_id: string;
           p_to_profile_id: string;
           p_note: string | null;
+          p_valuation_type?: LoanValuationType;
         };
         Returns: string;
+      };
+      update_loan: {
+        Args: {
+          p_loan_id: string;
+          p_variant_id: string;
+          p_quantity: number;
+          p_valuation_type: LoanValuationType;
+          p_note: string | null;
+        };
+        Returns: void;
+      };
+      update_loan_settlement: {
+        Args: {
+          p_loan_id: string;
+          p_settlement_method: LoanSettlementMethod;
+          p_settlement_bank_note?: string | null;
+        };
+        Returns: void;
       };
       mark_loan_returned: {
         Args: { p_loan_id: string };
@@ -580,6 +607,10 @@ export interface Database {
           amount_paid: number;
           balance: number;
         }[];
+      };
+      delete_customer: {
+        Args: { p_customer_id: string };
+        Returns: string;
       };
     };
   };

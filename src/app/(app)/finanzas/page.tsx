@@ -7,9 +7,10 @@ import { ExpensesForm } from "@/components/finanzas/expenses-form";
 import { ExpensesTable } from "@/components/finanzas/expenses-table";
 import { AlertsPanel } from "@/components/finanzas/alerts-panel";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { computeNetDebts, type DebtEntry } from "@/lib/utils/loan-debt";
+import { computeNetDebts, loanDebtAmount, type DebtEntry } from "@/lib/utils/loan-debt";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
 import { getTopSellingProducts } from "@/lib/queries/top-selling-products";
+import { formatCurrency } from "@/lib/utils/currency";
 
 export default async function FinanzasPage({
   searchParams,
@@ -94,7 +95,7 @@ export default async function FinanzasPage({
 
   const { data: unsettledLoans } = await supabase
     .from("loans")
-    .select("from_profile_id, to_profile_id, quantity, unit_cost")
+    .select("from_profile_id, to_profile_id, quantity, unit_cost, unit_price, valuation_type")
     .eq("status", "vendido")
     .is("debt_settled_at", null);
 
@@ -105,7 +106,7 @@ export default async function FinanzasPage({
     fromName: profileById.get(l.from_profile_id)?.display_name ?? "—",
     toProfileId: l.to_profile_id,
     toName: profileById.get(l.to_profile_id)?.display_name ?? "—",
-    amount: l.unit_cost * l.quantity,
+    amount: loanDebtAmount(l),
   }));
 
   const debtMessages = computeNetDebts(debts).map((line) => ({
@@ -132,6 +133,21 @@ export default async function FinanzasPage({
     .select("id", { count: "exact", head: true })
     .eq("delivered", false);
 
+  // Uso personal: puramente informativo — cuánto representa en dinero lo
+  // que se consumió internamente (al costo, no a precio de venta, porque
+  // nunca se vendió). Mismo effectiveUsuaria/desde/hasta que el resto de
+  // esta página, pero NUNCA se resta de netProfit ni entra en ningún
+  // cálculo de ganancia — register_personal_use ni siquiera toca `sales`.
+  let personalUseQuery = supabase.from("personal_use").select("quantity, unit_cost");
+  if (desde) personalUseQuery = personalUseQuery.gte("used_at", desde);
+  if (hasta) personalUseQuery = personalUseQuery.lte("used_at", hasta);
+  if (effectiveUsuaria) personalUseQuery = personalUseQuery.eq("profile_id", effectiveUsuaria);
+  const { data: personalUseRows } = await personalUseQuery;
+  const personalUseValue = (personalUseRows ?? []).reduce(
+    (sum, r) => sum + r.quantity * (r.unit_cost ?? 0),
+    0,
+  );
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -156,6 +172,14 @@ export default async function FinanzasPage({
         totalExpenses={totalExpenses}
         netProfit={netProfit}
       />
+
+      {personalUseValue > 0 && (
+        <p className="text-sm text-ink/60">
+          Uso personal: valor al costo de lo que se tomó para consumo propio en este período —{" "}
+          <span className="font-mono font-semibold text-ink">{formatCurrency(personalUseValue)}</span>.
+          Es solo informativo, no se resta de la ganancia de arriba.
+        </p>
+      )}
 
       <Card>
         <CardHeader>

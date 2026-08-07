@@ -8,7 +8,7 @@ import { LoanList, type LoanRow } from "@/components/prestamos/loan-list";
 import { SaldoNetoCard, type PendingLoanForBalance } from "@/components/prestamos/saldo-neto-card";
 import { MonetaryDebtCard } from "@/components/prestamos/monetary-debt-card";
 import { variantLabel } from "@/lib/utils/variant-label";
-import type { DebtEntry } from "@/lib/utils/loan-debt";
+import { loanDebtAmount, type DebtEntry } from "@/lib/utils/loan-debt";
 
 export default async function PrestamosPage() {
   const supabase = await createClient();
@@ -39,7 +39,7 @@ export default async function PrestamosPage() {
     loanDate: loan.loan_date,
     note: loan.note,
     status: loan.status,
-    debtAmount: loan.unit_cost * loan.quantity,
+    debtAmount: loanDebtAmount(loan),
     debtSettled: loan.debt_settled_at !== null,
   }));
 
@@ -66,7 +66,7 @@ export default async function PrestamosPage() {
       fromName: profileById.get(l.from_profile_id)?.display_name ?? "—",
       toProfileId: l.to_profile_id,
       toName: profileById.get(l.to_profile_id)?.display_name ?? "—",
-      amount: l.unit_cost * l.quantity,
+      amount: loanDebtAmount(l),
     }));
 
   return (

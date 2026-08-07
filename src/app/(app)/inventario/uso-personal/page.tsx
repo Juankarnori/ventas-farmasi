@@ -79,6 +79,7 @@ export default async function UsoPersonalPage({
       usedAt: e.used_at,
       label: colorName ? variantLabel(productName, colorName) : productName,
       quantity: e.quantity,
+      value: e.quantity * (e.unit_cost ?? 0),
       note: e.note,
       profileName: profileById.get(e.profile_id)?.display_name ?? "—",
     };

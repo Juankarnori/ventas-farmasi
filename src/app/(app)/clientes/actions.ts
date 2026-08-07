@@ -135,6 +135,27 @@ export async function updateCustomerContact(customerId: string, formData: FormDa
   revalidatePath("/clientes");
 }
 
+// Borra la clienta si no tiene nada que perder (sin ventas ni
+// seguimientos asociados) o la archiva si sí — ver delete_customer en
+// 0027_loan_valuation_edit_and_more.sql. Se llama directamente (no como
+// form action) para poder mostrar un mensaje distinto según qué pasó en
+// vez de un simple redirect ciego.
+export async function deleteCustomer(customerId: string): Promise<{ result: "deleted" | "archived" }> {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("delete_customer", { p_customer_id: customerId });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/clientes");
+  revalidatePath(`/clientes/${customerId}`);
+
+  return { result: data === "archived" ? "archived" : "deleted" };
+}
+
 // Resuelve una tarea de "Hoy toca contactar": 'hecho' tras escribirle de
 // verdad, 'omitido' si esta vez no correspondía.
 export async function completeFollowUpTask(taskId: string, status: "hecho" | "omitido") {

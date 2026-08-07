@@ -1,20 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  /* Teal & gold profundo */
-  --background: #f3f8f6; /* fondo principal */
-  --background-tint: #fafdfc; /* degradados y zonas iluminadas */
-  --panel: #bfe0d6; /* paneles, tarjetas y superficies satinadas (cards, modales, chips) */
-  --base: #f0e6d2; /* superficies base: sidebar, headers, pedestales */
-  --primary: #0e5c52; /* títulos principales y marca */
-  --gold: #c9a15a; /* bordes y detalles finos */
-  --sage: #4e8c81; /* íconos, líneas divisorias, marcos finos */
-  --ink: #2c3b38; /* texto informativo / cuerpo */
-  --surface: #fffdf8; /* fondo de tarjetas / elementos destacados en blanco */
-  --accent: #d97757; /* acento secundario: badges, chips, CTAs */
-  --accent-pill: #e19279; /* coral aclarado ~20%, solo para el fondo solido del identity pill (texto --ink encima necesita 4.5:1, el --accent normal solo da ~3.76:1) */
-  --sage-pill: #83afa7; /* sage aclarado ~30%, mismo motivo: --sage solido con texto --ink encima solo da ~3:1 */
-  --muted: #8fa79e; /* texto secundario / íconos apagados / estados inactivos */
+  /* Betty — Lavanda Malva Nude. Los 7 colores de la tabla se mapean a los
+     mismos nombres de token que ya usaba toda la app (--primary, --gold,
+     --sage, etc.) — se cambia el valor, no el nombre, para no tener que
+     tocar cada className de cada componente. Dos excepciones derivadas
+     (no vinieron en la tabla), igual que en las paletas anteriores:
+     --accent-pill/--sage-pill son variantes pensadas específicamente para
+     que el chip de identidad de usuaria (avatar + inicial) tenga >=4.5:1
+     de contraste real con texto --ink encima — ver el cálculo abajo.
+     Solo quedaron 2 tonos claros en la tabla (fondo principal y blanco
+     cálido) para 4 roles de superficie (background/background-tint/base/
+     surface) — se reusa el blanco cálido en los tres restantes en vez de
+     inventar tonos intermedios que la consigna no pidió. */
+  --background: #f4ecec; /* fondo principal: crema rosado suave */
+  --background-tint: #fbf7f4; /* degradados y zonas iluminadas: blanco cálido */
+  --panel: #d6b6c5; /* paneles, tarjetas y franjas decorativas: rosa empolvado */
+  --base: #fbf7f4; /* superficies base: sidebar, headers, pedestales: blanco cálido */
+  --primary: #733865; /* títulos principales y marca: ciruela intenso */
+  --gold: #c8a6c3; /* bordes y detalles finos: lavanda suave */
+  --sage: #a86fa3; /* íconos, líneas divisorias, marcos finos: malva medio */
+  --ink: #3f3338; /* texto informativo / cuerpo: texto oscuro */
+  --surface: #fbf7f4; /* fondo de tarjetas / elementos destacados: blanco cálido */
+  --accent: #733865; /* acento secundario: badges, chips, CTAs — mismo tono que --primary, la tabla no trae un 8vo color separado y ciruela funciona bien como fondo sólido con texto claro encima */
+  --accent-pill: #d6b6c5; /* rosa empolvado tal cual — con texto --ink encima ya da ~6.5:1, no hace falta aclararlo más */
+  --sage-pill: #c29abf; /* malva medio aclarado ~30% hacia blanco: el malva sólido con texto --ink encima solo da ~3.1:1, aclarado da ~5:1 */
+  --muted: #74516e; /* texto secundario / íconos apagados / estados inactivos (no tiene uso actual en el código, se deja consistente con la paleta por si se usa después) */
 }
 
 @theme inline {

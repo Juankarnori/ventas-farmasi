@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Textarea, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/currency";
 import { variantLabel } from "@/lib/utils/variant-label";
 import { CustomerContactEditor } from "@/components/clientes/customer-contact-editor";
 import { CustomerApartadoRow, type CustomerApartadoData } from "@/components/clientes/customer-apartado-row";
+import { DeleteCustomerButton } from "@/components/clientes/delete-customer-button";
 import { SaleHistoryTable, type SaleHistoryRow } from "@/components/shared/sale-history-table";
 import { updateCustomerNotes } from "../actions";
 
@@ -85,6 +87,14 @@ export default async function ClienteDetallePage({
     status: a.payment_status,
   }));
 
+  // Suma de TODOS los apartados con saldo pendiente, no de uno solo —
+  // mismo número que el badge del listado general (list_customer_pending_balances),
+  // acá calculado sobre los mismos apartados que ya se traen para la
+  // sección de abajo, en vez de una tercera consulta aparte.
+  const pendingBalance = apartadoRows
+    .filter((a) => a.status === "con_abonos")
+    .reduce((sum, a) => sum + a.balance, 0);
+
   // Productos más comprados: se cuentan todas las compras que no hayan
   // sido canceladas (los apartados en curso también cuentan — ya eligió
   // el producto, aunque todavía no haya terminado de pagarlo).
@@ -110,12 +120,21 @@ export default async function ClienteDetallePage({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link
-        href="/clientes"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-ink/60 hover:text-ink"
-      >
-        <ArrowLeft className="h-4 w-4" /> Volver a clientes
-      </Link>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <Link
+          href="/clientes"
+          className="inline-flex items-center gap-1 text-sm text-ink/60 hover:text-ink"
+        >
+          <ArrowLeft className="h-4 w-4" /> Volver a clientes
+        </Link>
+        <DeleteCustomerButton customerId={customer.id} customerName={customer.name} />
+      </div>
+
+      {customer.archived_at && (
+        <p className="mb-3 rounded-lg bg-panel/40 px-3 py-2 text-xs text-ink/60">
+          Esta clienta está archivada — no aparece en el listado general.
+        </p>
+      )}
 
       <CustomerContactEditor
         customerId={customer.id}
@@ -123,6 +142,17 @@ export default async function ClienteDetallePage({
         phone={customer.phone}
         birthDate={customer.birth_date}
       />
+
+      {/* No se metió adentro de CustomerContactEditor a propósito: ese
+          componente ya tiene su propio layout flex interno (nombre+lápiz
+          en modo vista, formulario flex-wrap en modo edición) — meterle
+          un badge ahí adentro como children pelearía con ese layout.
+          Queda como su propia línea, debajo. */}
+      {pendingBalance > 0 && (
+        <Badge variant="gold" className="mt-2 w-fit">
+          Saldo pendiente: {formatCurrency(pendingBalance)}
+        </Badge>
+      )}
 
       <Card className="mt-6">
         <div className="grid grid-cols-2 gap-4 text-sm">

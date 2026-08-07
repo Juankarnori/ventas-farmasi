@@ -25,7 +25,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
     >
       <span
         className="w-1.5 shrink-0"
-        style={{ backgroundColor: product.category?.color ?? "#C9A15A" }}
+        style={{ backgroundColor: product.category?.color ?? "#C8A6C3" }}
         aria-hidden
       />
       <div className="flex flex-1 flex-col">

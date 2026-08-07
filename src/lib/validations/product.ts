@@ -25,7 +25,7 @@ export const productVariantSchema = z.object({
   color_hex: z
     .string()
     .trim()
-    .regex(/^#[0-9a-fA-F]{6}$/, "Tiene que ser un color hex, ej: #0E5C52")
+    .regex(/^#[0-9a-fA-F]{6}$/, "Tiene que ser un color hex, ej: #733865")
     .nullable(),
   stock: z.coerce.number().int().min(0, "No puede ser negativo"),
   price_override: z.coerce.number().min(0, "No puede ser negativo").nullable(),
@@ -44,7 +44,7 @@ export const categorySchema = z.object({
   color: z
     .string()
     .trim()
-    .regex(/^#[0-9a-fA-F]{6}$/, "Tiene que ser un color hex, ej: #0E5C52"),
+    .regex(/^#[0-9a-fA-F]{6}$/, "Tiene que ser un color hex, ej: #733865"),
 });
 
 export type CategoryInput = z.infer<typeof categorySchema>;

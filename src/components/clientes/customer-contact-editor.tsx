@@ -5,7 +5,7 @@ import { Pencil, X } from "lucide-react";
 import { Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { WhatsAppButton } from "@/components/shared/whatsapp-button";
-import { formatBirthday } from "@/lib/utils/date";
+import { formatBirthday, calculateAge } from "@/lib/utils/date";
 import { updateCustomerContact } from "@/app/(app)/clientes/actions";
 
 export function CustomerContactEditor({
@@ -31,7 +31,11 @@ export function CustomerContactEditor({
             <p className="text-sm text-ink/60">{phone ?? "Sin teléfono"}</p>
             <WhatsAppButton phone={phone} />
           </div>
-          {birthDate && <p className="mt-0.5 text-sm text-ink/60">🎂 {formatBirthday(birthDate)}</p>}
+          {birthDate && (
+            <p className="mt-0.5 text-sm text-ink/60">
+              🎂 {formatBirthday(birthDate)} · {calculateAge(birthDate)} años
+            </p>
+          )}
         </div>
         <button
           type="button"

@@ -2,11 +2,11 @@
 -- ajustalos a tu lista de precios real de Farmasi una vez que arranques.
 
 insert into categories (name, color, sort_order) values
-  ('Skincare', '#0E5C52', 1),
-  ('Maquillaje', '#D97757', 2),
-  ('Perfumería', '#C9A15A', 3),
-  ('Cuidado Capilar', '#4E8C81', 4),
-  ('Cuidado Personal', '#2C3B38', 5)
+  ('Skincare', '#733865', 1),
+  ('Maquillaje', '#A86FA3', 2),
+  ('Perfumería', '#C8A6C3', 3),
+  ('Cuidado Capilar', '#D6B6C5', 4),
+  ('Cuidado Personal', '#3F3338', 5)
 on conflict (name) do nothing;
 
 insert into products (name, category_id, sale_price, cost_price, description, stock, low_stock_threshold, image_url)

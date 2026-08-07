@@ -32,16 +32,16 @@ export function SalesProfitChart({ data }: { data: DailyPoint[] }) {
     <div className="h-64">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-          <CartesianGrid stroke="#2C3B3814" vertical={false} />
+          <CartesianGrid stroke="#3F333814" vertical={false} />
           <XAxis
             dataKey="date"
             tickFormatter={(d: string) => formatDate(d, "d/M")}
-            tick={{ fontSize: 11, fill: "#2C3B38" }}
-            axisLine={{ stroke: "#2C3B3822" }}
+            tick={{ fontSize: 11, fill: "#3F3338" }}
+            axisLine={{ stroke: "#3F333822" }}
             tickLine={false}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "#2C3B38" }}
+            tick={{ fontSize: 11, fill: "#3F3338" }}
             axisLine={false}
             tickLine={false}
             width={48}
@@ -55,12 +55,16 @@ export function SalesProfitChart({ data }: { data: DailyPoint[] }) {
             labelFormatter={(d) => formatDate(String(d))}
             contentStyle={{
               borderRadius: 12,
-              border: "1px solid #C9A15A33",
+              border: "1px solid #C8A6C333",
               fontSize: 12,
             }}
           />
-          <Bar dataKey="ventas" fill="#0E5C52" radius={[4, 4, 0, 0]} maxBarSize={28} />
-          <Line type="monotone" dataKey="ganancia" stroke="#D97757" strokeWidth={2} dot={false} />
+          {/* Barra y línea necesitan colores distintos entre sí para
+              distinguirse — --accent quedó igual a --primary en esta
+              paleta (no vino un 8vo color separado en la tabla), así que
+              acá la línea usa --sage (malva) en vez de --accent. */}
+          <Bar dataKey="ventas" fill="#733865" radius={[4, 4, 0, 0]} maxBarSize={28} />
+          <Line type="monotone" dataKey="ganancia" stroke="#A86FA3" strokeWidth={2} dot={false} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>

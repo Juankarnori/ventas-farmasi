@@ -4,6 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
+import type { LoanValuationType, LoanSettlementMethod } from "@/lib/types/database.types";
+
+function readValuationType(formData: FormData): LoanValuationType {
+  const raw = String(formData.get("valuation_type") ?? "costo");
+  if (raw !== "costo" && raw !== "pvp") {
+    throw new Error("Tipo de valoración inválido");
+  }
+  return raw;
+}
 
 export async function createLoan(formData: FormData) {
   await getSessionProfile();
@@ -13,6 +22,7 @@ export async function createLoan(formData: FormData) {
   const quantity = Number(formData.get("quantity"));
   const direction = String(formData.get("direction") ?? "");
   const note = String(formData.get("note") ?? "").trim() || null;
+  const valuationType = readValuationType(formData);
   const [fromProfileId, toProfileId] = direction.split(":");
 
   if (!variantId || !fromProfileId || !toProfileId) {
@@ -29,6 +39,7 @@ export async function createLoan(formData: FormData) {
     p_from_profile_id: fromProfileId,
     p_to_profile_id: toProfileId,
     p_note: note,
+    p_valuation_type: valuationType,
   });
 
   if (error) {
@@ -39,6 +50,71 @@ export async function createLoan(formData: FormData) {
   revalidatePath("/inventario");
   revalidatePath("/catalogo");
   redirect("/prestamos");
+}
+
+// Edición completa (variante/cantidad/valoración) — solo mientras el
+// préstamo sigue 'pendiente' (ver update_loan). Igual que en Ventas, se
+// pasa el id ya bindeado desde la página.
+export async function updateLoan(loanId: string, formData: FormData) {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const variantId = String(formData.get("variant_id") ?? "");
+  const quantity = Number(formData.get("quantity"));
+  const note = String(formData.get("note") ?? "").trim() || null;
+  const valuationType = readValuationType(formData);
+
+  if (!variantId) {
+    throw new Error("Elegí un producto");
+  }
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    throw new Error("La cantidad tiene que ser mayor a 0");
+  }
+
+  const { error } = await supabase.rpc("update_loan", {
+    p_loan_id: loanId,
+    p_variant_id: variantId,
+    p_quantity: quantity,
+    p_valuation_type: valuationType,
+    p_note: note,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/prestamos");
+  revalidatePath(`/prestamos/${loanId}`);
+  revalidatePath("/inventario");
+  revalidatePath("/catalogo");
+  revalidatePath("/finanzas");
+}
+
+// Edición liviana: cómo se pagó/devolvió un préstamo ya resuelto — no
+// toca stock ni cantidades.
+export async function updateLoanSettlement(loanId: string, formData: FormData) {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const raw = String(formData.get("settlement_method") ?? "");
+  if (raw !== "efectivo" && raw !== "transferencia" && raw !== "producto") {
+    throw new Error("Método inválido");
+  }
+  const settlementMethod: LoanSettlementMethod = raw;
+  const bankNote = String(formData.get("settlement_bank_note") ?? "").trim() || null;
+
+  const { error } = await supabase.rpc("update_loan_settlement", {
+    p_loan_id: loanId,
+    p_settlement_method: settlementMethod,
+    p_settlement_bank_note: bankNote,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/prestamos");
+  revalidatePath(`/prestamos/${loanId}`);
 }
 
 export async function markLoanReturned(loanId: string) {

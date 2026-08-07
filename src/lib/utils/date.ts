@@ -16,3 +16,17 @@ export function todayISO() {
 export function formatBirthday(date: string) {
   return formatDate(date, "d 'de' MMMM");
 }
+
+// Edad actual a partir de la fecha de nacimiento — a diferencia de
+// formatBirthday, acá sí importa el año completo. Resta 1 si todavía no
+// pasó el cumpleaños de este año.
+export function calculateAge(birthDate: string): number {
+  const birth = parseISO(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const hadBirthdayThisYear =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+  if (!hadBirthdayThisYear) age -= 1;
+  return age;
+}

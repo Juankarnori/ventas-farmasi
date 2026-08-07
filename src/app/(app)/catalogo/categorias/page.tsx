@@ -51,7 +51,7 @@ export default async function CategoriasPage() {
               id="color"
               name="color"
               type="color"
-              defaultValue="#0E5C52"
+              defaultValue="#733865"
               className="h-10 w-16 rounded-lg border border-ink/15 bg-white/80 p-1"
             />
           </div>

@@ -18,7 +18,14 @@ export default async function ClientesPage({
   const { q } = await searchParams;
   const supabase = await createClient();
 
-  let query = supabase.from("customers").select("*").order("name", { ascending: true });
+  let query = supabase
+    .from("customers")
+    .select("*")
+    // Las archivadas (borrado "seguro" cuando tenían ventas/seguimientos
+    // asociados — ver delete_customer) no se pierden, solo dejan de
+    // aparecer acá. Se puede seguir entrando a su ficha por link directo.
+    .is("archived_at", null)
+    .order("name", { ascending: true });
   if (q) query = query.or(`name.ilike.%${q}%,phone.ilike.%${q}%`);
   const [{ data: customers }, { data: totals }, { data: pendingBalances }, followUpTasks] = await Promise.all([
     query,
