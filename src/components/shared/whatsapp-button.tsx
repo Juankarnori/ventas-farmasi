@@ -1,3 +1,5 @@
+"use client";
+
 import { whatsappLink } from "@/lib/utils/whatsapp";
 import { cn } from "@/lib/utils/cn";
 
