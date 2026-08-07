@@ -91,7 +91,7 @@ export function StockCarousel({ items }: { items: AvailableStockItem[] }) {
 
   return (
     <div
-      className="flex items-center gap-2"
+      className="flex min-w-0 items-center gap-2"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >

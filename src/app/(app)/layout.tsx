@@ -13,9 +13,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <SidebarNav isAdmin={profile.is_admin} />
       </aside>
 
-      <div className="flex flex-1 flex-col">
+      {/*
+        min-w-0: sin esto, este item de flex (fila con el <aside>) nunca
+        se achica por debajo del ancho intrínseco de lo que haya adentro
+        — es el default de flexbox, `min-width: auto`. Si algún hijo en
+        cualquier página (un carrusel, una tabla ancha) tiene contenido
+        de ancho fijo, esta columna entera se estira para no cortarlo, y
+        eso empuja el body más ancho que el viewport — la barra de scroll
+        horizontal aparece acá, no donde está el contenido que la causó.
+      */}
+      <div className="flex min-w-0 flex-1 flex-col">
         <Topbar profile={profile} />
-        <main className="flex-1 px-4 pb-20 pt-6 md:px-8 md:pb-8">{children}</main>
+        <main className="min-w-0 flex-1 overflow-x-hidden px-4 pb-20 pt-6 md:px-8 md:pb-8">
+          {children}
+        </main>
         <MobileNav isAdmin={profile.is_admin} />
       </div>
     </div>

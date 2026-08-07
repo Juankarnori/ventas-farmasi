@@ -37,6 +37,16 @@
   --font-mono: var(--font-space-grotesk);
 }
 
+html,
+body {
+  /* Red de seguridad general: si algún hijo se pasa de ancho por error
+     (un carrusel, una tabla ancha, lo que sea), esto corta la barra de
+     scroll horizontal de toda la página en vez de dejarla aparecer.
+     No reemplaza arreglar la causa puntual en cada caso — es la última
+     línea de defensa, no la primera. */
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--ink);
