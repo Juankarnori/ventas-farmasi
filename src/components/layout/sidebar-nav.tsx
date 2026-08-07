@@ -12,7 +12,9 @@ export function SidebarNav({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
     <nav className="flex flex-col gap-1">
       {items.map((item) => {
-        const active = pathname.startsWith(item.href);
+        // "/" es un caso especial: con startsWith(), Inicio quedaría
+        // marcado "activo" en cualquier ruta (todas empiezan con "/").
+        const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}

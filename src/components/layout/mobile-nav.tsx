@@ -12,7 +12,9 @@ export function MobileNav({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 flex justify-around overflow-x-auto border-t border-gold/20 bg-base/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden">
       {items.map((item) => {
-        const active = pathname.startsWith(item.href);
+        // "/" es un caso especial: con startsWith(), Inicio quedaría
+        // marcado "activo" en cualquier ruta (todas empiezan con "/").
+        const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}

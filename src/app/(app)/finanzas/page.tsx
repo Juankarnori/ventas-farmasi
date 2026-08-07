@@ -9,6 +9,7 @@ import { AlertsPanel } from "@/components/finanzas/alerts-panel";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { computeNetDebts, type DebtEntry } from "@/lib/utils/loan-debt";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
+import { getTopSellingProducts } from "@/lib/queries/top-selling-products";
 
 export default async function FinanzasPage({
   searchParams,
@@ -45,14 +46,12 @@ export default async function FinanzasPage({
   const { data: expenses } = await expensesQuery.order("expense_date", { ascending: false });
 
   const saleById = new Map((sales ?? []).map((s) => [s.id, s]));
-  const productById = new Map((products ?? []).map((p) => [p.id, p]));
 
   const items = saleIds.length > 0 ? (await supabase.from("sale_items").select("*").in("sale_id", saleIds)).data : [];
 
   let totalSales = 0;
   let totalCost = 0;
   const byDate = new Map<string, { ventas: number; ganancia: number }>();
-  const byProduct = new Map<string, { quantity: number; profit: number }>();
 
   for (const item of items ?? []) {
     const sale = saleById.get(item.sale_id);
@@ -67,11 +66,6 @@ export default async function FinanzasPage({
     dayEntry.ventas += lineTotal;
     dayEntry.ganancia += item.profit;
     byDate.set(sale.sale_date, dayEntry);
-
-    const productEntry = byProduct.get(item.product_id) ?? { quantity: 0, profit: 0 };
-    productEntry.quantity += item.quantity;
-    productEntry.profit += item.profit;
-    byProduct.set(item.product_id, productEntry);
   }
 
   const totalExpenses = (expenses ?? []).reduce((sum, e) => sum + e.amount, 0);
@@ -81,15 +75,15 @@ export default async function FinanzasPage({
     .map(([date, v]) => ({ date, ...v }))
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 
-  const topProducts: TopProductRow[] = Array.from(byProduct.entries())
-    .map(([productId, v]) => ({
-      productId,
-      productName: productById.get(productId)?.name ?? "—",
-      quantity: v.quantity,
-      profit: v.profit,
-    }))
-    .sort((a, b) => b.quantity - a.quantity)
-    .slice(0, 5);
+  // Se pide con los mismos desde/hasta/effectiveUsuaria que el resto de
+  // esta página (Inicio también llama a esta misma función, así que los
+  // dos lugares siempre van a coincidir en el número).
+  const topProducts: TopProductRow[] = await getTopSellingProducts(supabase, {
+    sellerId: effectiveUsuaria || null,
+    desde,
+    hasta,
+    limit: 5,
+  });
 
   const lowStockProducts = (products ?? []).filter((p) => p.stock <= p.low_stock_threshold);
 

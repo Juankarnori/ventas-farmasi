@@ -1,4 +1,5 @@
 import {
+  Home,
   LayoutDashboard,
   ShoppingBag,
   Boxes,
@@ -17,6 +18,7 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
+  { href: "/", label: "Inicio", icon: Home },
   { href: "/finanzas", label: "Finanzas", icon: LayoutDashboard },
   { href: "/catalogo", label: "Catálogo", icon: ShoppingBag },
   { href: "/inventario", label: "Inventario", icon: Boxes },

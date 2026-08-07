@@ -6,15 +6,12 @@ import { Button } from "@/components/ui/button";
 import { WhatsAppButton } from "@/components/shared/whatsapp-button";
 import { formatDate } from "@/lib/utils/date";
 import { completeFollowUpTask } from "@/app/(app)/clientes/actions";
+import type { PendingFollowUp } from "@/lib/queries/pending-follow-ups";
 
-export interface FollowUpTaskData {
-  id: string;
-  customerId: string;
-  customerName: string;
-  customerPhone: string | null;
-  dueDate: string;
-  messagePreview: string;
-}
+// Reexportado con el nombre que ya usaba este componente — el shape es
+// el mismo que devuelve getPendingFollowUps(), fuente única para esta
+// vista, para Inicio, y para cualquier otro lugar que necesite lo mismo.
+export type FollowUpTaskData = PendingFollowUp;
 
 // "Hoy toca contactar": tareas pendientes con due_date <= hoy (incluye
 // atrasadas). El mensaje es editable antes de mandarlo — nunca se envía
