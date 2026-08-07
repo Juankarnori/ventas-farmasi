@@ -11,7 +11,15 @@ import { variantLabel } from "@/lib/utils/variant-label";
 import { RegisterPaymentDialog } from "@/components/ventas/register-payment-dialog";
 import { CancelApartadoButton } from "@/components/ventas/cancel-apartado-button";
 import { PaymentMethodEditor } from "@/components/ventas/payment-method-editor";
-import { markItemDelivered, updateSalePaymentMethod } from "../../actions";
+import { ApartadoCustomerEditor } from "@/components/ventas/apartado-customer-editor";
+import { ApartadoItemsEditPanel, type ApartadoItemDisplayRow } from "@/components/ventas/apartado-items-edit-panel";
+import type { SellableProduct, SaleItemDefault } from "@/components/ventas/sale-line-items";
+import {
+  markItemDelivered,
+  updateSalePaymentMethod,
+  updateApartadoCustomer,
+  updateApartadoItems,
+} from "../../actions";
 
 export default async function ApartadoDetallePage({
   params,
@@ -39,11 +47,32 @@ export default async function ApartadoDetallePage({
   }
 
   const variantIds = (items ?? []).map((i) => i.variant_id);
-  const [{ data: variants }, { data: products }] = await Promise.all([
+  const [
+    { data: variants },
+    { data: products },
+    { data: allProducts },
+    { data: allVariants },
+    { data: sellerStock },
+    { data: categories },
+    { data: lines },
+  ] = await Promise.all([
     variantIds.length > 0
       ? supabase.from("product_variants").select("id, product_id, color_name").in("id", variantIds)
       : Promise.resolve({ data: [] }),
     supabase.from("products").select("id, name"),
+    supabase
+      .from("products")
+      .select("id, name, sale_price, category_id, line_id")
+      .order("name", { ascending: true }),
+    supabase
+      .from("product_variants")
+      .select("id, product_id, color_name, price_override")
+      .order("color_name", { ascending: true }),
+    // Stock de la VENDEDORA de este apartado, no de quien mira la página
+    // — igual criterio que en la edición de ventas de contado.
+    supabase.from("variant_stock").select("variant_id, stock").eq("profile_id", sale.seller_profile_id),
+    supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),
+    supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),
   ]);
 
   const variantById = new Map((variants ?? []).map((v) => [v.id, v]));
@@ -58,6 +87,76 @@ export default async function ApartadoDetallePage({
   const canRegisterPayment = sale.payment_status === "con_abonos";
   const anyDelivered = (items ?? []).some((i) => i.delivered);
   const canCancel = sale.payment_status === "con_abonos" && !anyDelivered;
+  // Solo se editan productos mientras el apartado sigue abierto y nada se
+  // entregó todavía (ver update_apartado_items).
+  const canEditItems =
+    (sale.payment_status === "con_abonos" || sale.payment_status === "completado") && !anyDelivered;
+
+  // Stock "ajustado" para el editor: el stock actual de la vendedora más
+  // lo que este mismo apartado ya tenía reservado de esa variante — mismo
+  // criterio que /ventas/[id].
+  const oldQtyByVariant = new Map<string, number>();
+  for (const item of items ?? []) {
+    oldQtyByVariant.set(item.variant_id, (oldQtyByVariant.get(item.variant_id) ?? 0) + item.quantity);
+  }
+  const sellerStockByVariant = new Map((sellerStock ?? []).map((s) => [s.variant_id, s.stock]));
+
+  const variantsByProduct = new Map<string, typeof allVariants>();
+  for (const v of allVariants ?? []) {
+    const list = variantsByProduct.get(v.product_id) ?? [];
+    list!.push(v);
+    variantsByProduct.set(v.product_id, list);
+  }
+
+  const sellableProducts: SellableProduct[] = (allProducts ?? [])
+    .map((p) => ({
+      ...p,
+      variants: (variantsByProduct.get(p.id) ?? []).map((v) => ({
+        id: v.id,
+        color_name: v.color_name,
+        price_override: v.price_override,
+        stock: (sellerStockByVariant.get(v.id) ?? 0) + (oldQtyByVariant.get(v.id) ?? 0),
+      })),
+    }))
+    .filter((p) => p.variants.length > 0);
+
+  function labelFor(item: { product_id: string; variant_id: string }) {
+    const productName = productById.get(item.product_id)?.name ?? "—";
+    const colorName = variantById.get(item.variant_id)?.color_name;
+    return colorName ? variantLabel(productName, colorName) : productName;
+  }
+
+  const displayRows: ApartadoItemDisplayRow[] = (items ?? []).map((item) => ({
+    id: item.id,
+    label: labelFor(item),
+    quantity: item.quantity,
+    salePrice: item.sale_price,
+    delivered: item.delivered,
+    deliveryControl: item.delivered ? (
+      <span className="flex items-center gap-1 text-xs text-sage">
+        <Check className="h-3.5 w-3.5" /> Entregado
+      </span>
+    ) : (
+      <form action={markItemDelivered.bind(null, sale.id, item.id)}>
+        <button
+          type="submit"
+          className="rounded-full px-3 py-1.5 text-xs text-primary hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+        >
+          Marcar entregado
+        </button>
+      </form>
+    ),
+  }));
+
+  const defaultItems: SaleItemDefault[] = (items ?? []).map((item) => ({
+    product_id: item.product_id,
+    variant_id: item.variant_id,
+    quantity: item.quantity,
+    sale_price: item.sale_price,
+  }));
+
+  const updateItemsAction = updateApartadoItems.bind(null, sale.id);
+  const updateCustomerAction = updateApartadoCustomer.bind(null, sale.id);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -70,10 +169,13 @@ export default async function ApartadoDetallePage({
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl text-ink">{sale.customer_name}</h1>
+          <ApartadoCustomerEditor
+            customerName={sale.customer_name ?? "—"}
+            customerPhone={sale.customer_phone}
+            action={updateCustomerAction}
+          />
           <p className="mt-1 text-sm text-ink/60">
             {formatDate(sale.sale_date)} · {profileById.get(sale.seller_profile_id)?.display_name ?? "—"}
-            {sale.customer_phone && ` · ${sale.customer_phone}`}
           </p>
           <div className="mt-1.5">
             <PaymentMethodEditor
@@ -110,7 +212,13 @@ export default async function ApartadoDetallePage({
           </div>
           <div>
             <p className="text-xs text-ink/50">Saldo</p>
-            <p className="font-mono text-lg tabular-nums font-semibold text-ink">
+            <p
+              className={
+                sale.payment_status === "con_abonos" && pendingBalance > 0
+                  ? "font-mono text-lg tabular-nums font-semibold text-primary"
+                  : "font-mono text-lg tabular-nums font-semibold text-ink"
+              }
+            >
               {formatCurrency(pendingBalance)}
             </p>
           </div>
@@ -128,55 +236,21 @@ export default async function ApartadoDetallePage({
         )}
         {sale.payment_status === "con_abonos" && anyDelivered && (
           <p className="mt-2 text-xs text-ink/50">
-            Ya entregaste productos de este apartado, así que no se puede cancelar.
+            Ya entregaste productos de este apartado, así que no se puede cancelar ni editar.
           </p>
         )}
       </Card>
 
-      <Card className="mt-6 p-0">
-        <CardHeader className="px-5 pt-5">
-          <CardTitle>Productos apartados</CardTitle>
-        </CardHeader>
-        <Table>
-          <Thead>
-            <Tr>
-              <Th>Producto</Th>
-              <Th className="text-right">Cant.</Th>
-              <Th className="text-right">Precio</Th>
-              <Th>Entrega</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {(items ?? []).map((item) => {
-              const productName = productById.get(item.product_id)?.name ?? "—";
-              const colorName = variantById.get(item.variant_id)?.color_name;
-              return (
-                <Tr key={item.id}>
-                  <Td>{colorName ? variantLabel(productName, colorName) : productName}</Td>
-                  <Td numeric>{item.quantity}</Td>
-                  <Td numeric>{formatCurrency(item.sale_price)}</Td>
-                  <Td>
-                    {item.delivered ? (
-                      <span className="flex items-center gap-1 text-xs text-sage">
-                        <Check className="h-3.5 w-3.5" /> Entregado
-                      </span>
-                    ) : (
-                      <form action={markItemDelivered.bind(null, sale.id, item.id)}>
-                        <button
-                          type="submit"
-                          className="rounded-full px-3 py-1.5 text-xs text-primary hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
-                        >
-                          Marcar entregado
-                        </button>
-                      </form>
-                    )}
-                  </Td>
-                </Tr>
-              );
-            })}
-          </Tbody>
-        </Table>
-      </Card>
+      <ApartadoItemsEditPanel
+        displayRows={displayRows}
+        totalPrice={total}
+        canEdit={canEditItems}
+        defaultItems={defaultItems}
+        products={sellableProducts}
+        categories={categories ?? []}
+        lines={lines ?? []}
+        action={updateItemsAction}
+      />
 
       <Card className="mt-6 p-0">
         <CardHeader className="px-5 pt-5">

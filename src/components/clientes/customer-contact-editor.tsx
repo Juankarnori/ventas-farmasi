@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, X } from "lucide-react";
-import { Input, Label } from "@/components/ui/input";
+import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { WhatsAppButton } from "@/components/shared/whatsapp-button";
 import { formatBirthday, calculateAge } from "@/lib/utils/date";
@@ -13,11 +13,13 @@ export function CustomerContactEditor({
   name,
   phone,
   birthDate,
+  notes,
 }: {
   customerId: string;
   name: string;
   phone: string | null;
   birthDate: string | null;
+  notes: string | null;
 }) {
   const [editing, setEditing] = useState(false);
   const action = updateCustomerContact.bind(null, customerId);
@@ -36,48 +38,60 @@ export function CustomerContactEditor({
               🎂 {formatBirthday(birthDate)} · {calculateAge(birthDate)} años
             </p>
           )}
+          {notes && <p className="mt-2 max-w-md text-sm text-ink/70">{notes}</p>}
         </div>
+        {/* Mismo lenguaje visual (Pencil + texto "Editar", píldora clara)
+            que el botón de editar en SaleCard — para que se sienta la
+            misma acción en toda la app, no un icono aislado. */}
         <button
           type="button"
           onClick={() => setEditing(true)}
-          aria-label="Editar datos de la clienta"
-          className="rounded-full p-2 text-ink/40 hover:bg-primary/10 hover:text-primary"
+          className="flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
         >
-          <Pencil className="h-4 w-4" />
+          <Pencil className="h-3.5 w-3.5" /> Editar
         </button>
       </div>
     );
   }
 
   return (
-    <form
-      action={action}
-      onSubmit={() => setEditing(false)}
-      className="flex flex-wrap items-end gap-2"
-    >
-      <div className="min-w-[160px] flex-1">
-        <Label htmlFor="name">Nombre</Label>
-        <Input id="name" name="name" defaultValue={name} required />
+    <form action={action} onSubmit={() => setEditing(false)} className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="min-w-[160px] flex-1">
+          <Label htmlFor="name">Nombre</Label>
+          <Input id="name" name="name" defaultValue={name} required />
+        </div>
+        <div className="w-44">
+          <Label htmlFor="phone">Teléfono</Label>
+          <Input id="phone" name="phone" defaultValue={phone ?? ""} />
+        </div>
+        <div className="w-44">
+          <Label htmlFor="birth_date">Cumpleaños</Label>
+          <Input id="birth_date" name="birth_date" type="date" defaultValue={birthDate ?? ""} />
+        </div>
       </div>
-      <div className="w-44">
-        <Label htmlFor="phone">Teléfono</Label>
-        <Input id="phone" name="phone" defaultValue={phone ?? ""} />
+      <div>
+        <Label htmlFor="notes">Notas y preferencias</Label>
+        <Textarea
+          id="notes"
+          name="notes"
+          rows={3}
+          defaultValue={notes ?? ""}
+          placeholder="Ej: prefiere tonos coral, alérgica a fragancias fuertes, siempre pregunta por novedades de skincare..."
+        />
       </div>
-      <div className="w-44">
-        <Label htmlFor="birth_date">Cumpleaños</Label>
-        <Input id="birth_date" name="birth_date" type="date" defaultValue={birthDate ?? ""} />
+      <div className="flex gap-2">
+        <Button type="submit" size="sm">
+          Guardar
+        </Button>
+        <button
+          type="button"
+          onClick={() => setEditing(false)}
+          className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs text-ink/60 hover:bg-ink/5 hover:text-ink"
+        >
+          <X className="h-4 w-4" /> Cancelar
+        </button>
       </div>
-      <Button type="submit" size="sm">
-        Guardar
-      </Button>
-      <button
-        type="button"
-        onClick={() => setEditing(false)}
-        aria-label="Cancelar edición"
-        className="rounded-full p-2 text-ink/40 hover:bg-ink/5"
-      >
-        <X className="h-4 w-4" />
-      </button>
     </form>
   );
 }

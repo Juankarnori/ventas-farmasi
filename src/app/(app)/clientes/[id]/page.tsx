@@ -4,15 +4,12 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Textarea, Label } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/currency";
 import { variantLabel } from "@/lib/utils/variant-label";
 import { CustomerContactEditor } from "@/components/clientes/customer-contact-editor";
 import { CustomerApartadoRow, type CustomerApartadoData } from "@/components/clientes/customer-apartado-row";
 import { DeleteCustomerButton } from "@/components/clientes/delete-customer-button";
 import { SaleHistoryTable, type SaleHistoryRow } from "@/components/shared/sale-history-table";
-import { updateCustomerNotes } from "../actions";
 
 export default async function ClienteDetallePage({
   params,
@@ -141,6 +138,7 @@ export default async function ClienteDetallePage({
         name={customer.name}
         phone={customer.phone}
         birthDate={customer.birth_date}
+        notes={customer.notes}
       />
 
       {/* No se metió adentro de CustomerContactEditor a propósito: ese
@@ -167,29 +165,6 @@ export default async function ClienteDetallePage({
             <p className="font-mono text-lg tabular-nums text-ink">{paidSaleIds.size}</p>
           </div>
         </div>
-      </Card>
-
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>Notas y preferencias</CardTitle>
-        </CardHeader>
-        <form action={updateCustomerNotes.bind(null, customer.id)} className="flex flex-col gap-3">
-          <div>
-            <Label htmlFor="notes" className="sr-only">
-              Notas
-            </Label>
-            <Textarea
-              id="notes"
-              name="notes"
-              rows={4}
-              defaultValue={customer.notes ?? ""}
-              placeholder="Ej: prefiere tonos coral, alérgica a fragancias fuertes, siempre pregunta por novedades de skincare..."
-            />
-          </div>
-          <Button type="submit" size="sm" className="w-fit">
-            Guardar notas
-          </Button>
-        </form>
       </Card>
 
       {apartadoRows.length > 0 && (

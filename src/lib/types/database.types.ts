@@ -589,6 +589,13 @@ export interface Database {
         Args: { p_sale_id: string; p_payment_method: PaymentMethod; p_bank_note?: string | null };
         Returns: void;
       };
+      update_apartado_items: {
+        Args: {
+          p_sale_id: string;
+          p_items: { variant_id: string; quantity: number; sale_price: number }[];
+        };
+        Returns: void;
+      };
       register_personal_use: {
         Args: { p_variant_id: string; p_quantity: number; p_note: string | null; p_used_at: string };
         Returns: void;

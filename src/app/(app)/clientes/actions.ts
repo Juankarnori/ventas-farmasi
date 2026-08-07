@@ -84,24 +84,6 @@ export async function createCustomer(formData: FormData) {
   redirect(`/clientes/${data.id}`);
 }
 
-export async function updateCustomerNotes(customerId: string, formData: FormData) {
-  await getSessionProfile();
-  const supabase = await createClient();
-
-  const notes = String(formData.get("notes") ?? "").trim() || null;
-
-  const { error } = await supabase
-    .from("customers")
-    .update({ notes, updated_at: new Date().toISOString() })
-    .eq("id", customerId);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  revalidatePath(`/clientes/${customerId}`);
-}
-
 export async function updateCustomerContact(customerId: string, formData: FormData) {
   await getSessionProfile();
   const supabase = await createClient();
@@ -122,6 +104,7 @@ export async function updateCustomerContact(customerId: string, formData: FormDa
     .update({
       name: parsed.data.name,
       phone: parsed.data.phone || null,
+      notes: parsed.data.notes || null,
       birth_date: parsed.data.birth_date || null,
       updated_at: new Date().toISOString(),
     })

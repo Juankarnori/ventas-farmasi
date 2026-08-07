@@ -169,6 +169,72 @@ export async function updateSalePaymentMethod(saleId: string, formData: FormData
   revalidatePath("/ventas/apartados");
 }
 
+// Edición de productos/cantidades de un apartado ya registrado — a
+// diferencia de updateSaleItems (solo ventas de contado), esta pasa por
+// update_apartado_items, que además bloquea si el nuevo total queda por
+// debajo de lo ya abonado (ver 0028_edit_apartado_items.sql).
+export async function updateApartadoItems(saleId: string, formData: FormData) {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const itemsRaw = String(formData.get("items") ?? "[]");
+
+  let items: unknown;
+  try {
+    items = JSON.parse(itemsRaw);
+  } catch {
+    throw new Error("Los productos del apartado no son válidos");
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error("El apartado necesita al menos un producto");
+  }
+
+  const { error } = await supabase.rpc("update_apartado_items", {
+    p_sale_id: saleId,
+    p_items: items,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/ventas/apartados/${saleId}`);
+  revalidatePath("/ventas/apartados");
+  revalidatePath("/ventas");
+  revalidatePath("/inventario");
+  revalidatePath("/catalogo");
+  revalidatePath("/finanzas");
+}
+
+// Edición liviana del nombre/teléfono de la clienta cargados en el propio
+// apartado (por si se cargaron mal) — no toca stock ni plata, así que es
+// un update directo a la tabla en vez de pasar por una función: la RLS de
+// `sales` (vendedora dueña o admin) ya cubre la autorización.
+export async function updateApartadoCustomer(saleId: string, formData: FormData) {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const customerName = String(formData.get("customer_name") ?? "").trim();
+  const customerPhone = String(formData.get("customer_phone") ?? "").trim() || null;
+
+  if (!customerName) {
+    throw new Error("El apartado necesita el nombre de la clienta");
+  }
+
+  const { error } = await supabase
+    .from("sales")
+    .update({ customer_name: customerName, customer_phone: customerPhone })
+    .eq("id", saleId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/ventas/apartados/${saleId}`);
+  revalidatePath("/ventas/apartados");
+}
+
 export async function registerPayment(saleId: string, formData: FormData) {
   await getSessionProfile();
   const supabase = await createClient();

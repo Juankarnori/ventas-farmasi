@@ -59,7 +59,17 @@ export function ApartadoCard({ apartado }: { apartado: ApartadoCardData }) {
         </div>
         <div>
           <p className="text-xs text-ink/50">Saldo</p>
-          <p className="font-mono tabular-nums font-semibold text-ink">
+          {/* Mismo criterio que el badge de arriba: solo se resalta con el
+              color fuerte de la marca (ciruela/primary) cuando de verdad
+              hay saldo pendiente — completado/cancelado se quedan en el
+              tono neutro de siempre. */}
+          <p
+            className={
+              apartado.status === "con_abonos" && apartado.balance > 0
+                ? "font-mono tabular-nums font-semibold text-primary"
+                : "font-mono tabular-nums font-semibold text-ink"
+            }
+          >
             {formatCurrency(apartado.balance)}
           </p>
         </div>
