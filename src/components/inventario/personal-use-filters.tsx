@@ -4,15 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Input, Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 
-export function VentasFilters({
-  profiles,
-  products,
-  isAdmin,
-}: {
-  profiles: { id: string; display_name: string }[];
-  products: { id: string; name: string }[];
-  isAdmin: boolean;
-}) {
+export function PersonalUseFilters({ profiles }: { profiles: { id: string; display_name: string }[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -27,47 +19,34 @@ export function VentasFilters({
   return (
     <div className="flex flex-wrap gap-3">
       <div>
-        <Label htmlFor="ventas_desde">Desde</Label>
+        <Label htmlFor="pu_desde">Desde</Label>
         <Input
-          id="ventas_desde"
+          id="pu_desde"
           type="date"
           defaultValue={searchParams.get("desde") ?? ""}
           onChange={(e) => update("desde", e.target.value)}
         />
       </div>
       <div>
-        <Label htmlFor="ventas_hasta">Hasta</Label>
+        <Label htmlFor="pu_hasta">Hasta</Label>
         <Input
-          id="ventas_hasta"
+          id="pu_hasta"
           type="date"
           defaultValue={searchParams.get("hasta") ?? ""}
           onChange={(e) => update("hasta", e.target.value)}
         />
       </div>
-      {isAdmin && (
-        <div className="w-44">
-          <Select
-            defaultValue={searchParams.get("usuaria") ?? ""}
-            onChange={(e) => update("usuaria", e.target.value)}
-          >
-            <option value="">Todas las usuarias</option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.display_name}
-              </option>
-            ))}
-          </Select>
-        </div>
-      )}
-      <div className="w-56">
+      <div className="w-44">
+        <Label htmlFor="pu_usuaria">Usuaria</Label>
         <Select
-          defaultValue={searchParams.get("producto") ?? ""}
-          onChange={(e) => update("producto", e.target.value)}
+          id="pu_usuaria"
+          defaultValue={searchParams.get("usuaria") ?? ""}
+          onChange={(e) => update("usuaria", e.target.value)}
         >
-          <option value="">Todos los productos</option>
-          {products.map((p) => (
+          <option value="">Todas las usuarias</option>
+          {profiles.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name}
+              {p.display_name}
             </option>
           ))}
         </Select>

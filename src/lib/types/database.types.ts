@@ -19,7 +19,10 @@ export type StockMovementType =
   | "prestamo_salida"
   | "prestamo_entrada"
   | "devolucion_salida"
-  | "devolucion_entrada";
+  | "devolucion_entrada"
+  | "apartado_cancelado"
+  | "ajuste_venta"
+  | "uso_personal";
 export type OrderStatus = "pendiente" | "recibido";
 export type LoanStatus = "pendiente" | "devuelto" | "vendido";
 export type ExpenseCategory = "envio" | "empaque" | "publicidad" | "otro";
@@ -367,6 +370,26 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["expenses"]["Row"]>;
         Relationships: [];
       };
+      personal_use: {
+        Row: {
+          id: string;
+          variant_id: string;
+          product_id: string;
+          profile_id: string;
+          quantity: number;
+          note: string | null;
+          used_at: string;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["personal_use"]["Row"]> & {
+          variant_id: string;
+          product_id: string;
+          profile_id: string;
+          quantity: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["personal_use"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: {
       sale_balances: {
@@ -538,6 +561,25 @@ export interface Database {
       update_sale_payment_method: {
         Args: { p_sale_id: string; p_payment_method: PaymentMethod; p_bank_note?: string | null };
         Returns: void;
+      };
+      register_personal_use: {
+        Args: { p_variant_id: string; p_quantity: number; p_note: string | null; p_used_at: string };
+        Returns: void;
+      };
+      list_customer_pending_balances: {
+        Args: Record<string, never>;
+        Returns: { customer_id: string; pending_balance: number }[];
+      };
+      get_customer_apartados: {
+        Args: { p_customer_id: string };
+        Returns: {
+          sale_id: string;
+          sale_date: string;
+          total_price: number;
+          payment_status: PaymentStatus;
+          amount_paid: number;
+          balance: number;
+        }[];
       };
     };
   };

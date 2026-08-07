@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/currency";
 import { WhatsAppButton } from "@/components/shared/whatsapp-button";
 
@@ -9,6 +10,9 @@ export interface CustomerCardData {
   notes: string | null;
   totalSpent: number;
   purchaseCount: number;
+  // Suma de saldo de apartados con abonos pendientes. `undefined`/0 = no
+  // debe nada — en ese caso no se muestra el badge (ver más abajo).
+  pendingBalance?: number;
 }
 
 export function CustomerCard({ customer }: { customer: CustomerCardData }) {
@@ -27,7 +31,17 @@ export function CustomerCard({ customer }: { customer: CustomerCardData }) {
         className="absolute inset-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       />
 
-      <p className="font-medium text-ink">{customer.name}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-medium text-ink">{customer.name}</p>
+        {/* Sin z-index/relative a propósito, a diferencia del botón de
+            WhatsApp: este badge no es interactivo, no necesita ganarle
+            el click al <Link> de fondo. */}
+        {!!customer.pendingBalance && (
+          <Badge variant="gold" className="shrink-0">
+            Saldo pendiente: {formatCurrency(customer.pendingBalance)}
+          </Badge>
+        )}
+      </div>
       <div className="mt-0.5 flex items-center gap-1">
         <p className="text-xs text-ink/50">{customer.phone ?? "Sin teléfono"}</p>
         <WhatsAppButton phone={customer.phone} className="relative z-10 h-5 w-5" />

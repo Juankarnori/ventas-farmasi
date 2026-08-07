@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils/currency";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
+import { BorrowStockDialog } from "./borrow-stock-dialog";
 
 export interface SellableVariant {
   id: string;
@@ -59,19 +60,33 @@ export function SaleLineItems({
   // "no te alcanza" falso sobre una cantidad que en realidad ya es tuya.
   defaultItems?: SaleItemDefault[];
 }) {
-  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  // Copia local mutable: cuando se pide prestado stock desde acá mismo
+  // (ver BorrowStockDialog), el préstamo ya se creó de verdad en la base
+  // — esto solo refleja ese cambio en pantalla al toque, sin recargar la
+  // página ni perder lo que ya se había cargado en el formulario.
+  const [productsState, setProductsState] = useState(products);
+  const productById = useMemo(() => new Map(productsState.map((p) => [p.id, p])), [productsState]);
+
+  function bumpStock(variantId: string, addedStock: number) {
+    setProductsState((prev) =>
+      prev.map((p) => ({
+        ...p,
+        variants: p.variants.map((v) => (v.id === variantId ? { ...v, stock: v.stock + addedStock } : v)),
+      })),
+    );
+  }
 
   const [filterCategoryId, setFilterCategoryId] = useState("");
   const [filterLineId, setFilterLineId] = useState("");
 
   const filteredProducts = useMemo(
     () =>
-      products.filter((p) => {
+      productsState.filter((p) => {
         if (filterCategoryId && p.category_id !== filterCategoryId) return false;
         if (filterLineId && p.line_id !== filterLineId) return false;
         return true;
       }),
-    [products, filterCategoryId, filterLineId],
+    [productsState, filterCategoryId, filterLineId],
   );
 
   function onFilterCategoryChange(id: string) {
@@ -111,7 +126,7 @@ export function SaleLineItems({
   );
 
   function addRow() {
-    const pool = filteredProducts.length > 0 ? filteredProducts : products;
+    const pool = filteredProducts.length > 0 ? filteredProducts : productsState;
     if (pool.length === 0) return;
     setRows((r) => [...r, { key: nextKey, ...firstRowFor(pool[0]) }]);
     setNextKey((k) => k + 1);
@@ -231,10 +246,17 @@ export function SaleLineItems({
               </button>
             </div>
             {overStock && (
-              <p className="mt-2 flex items-center gap-1.5 text-xs text-ink">
-                <AlertTriangle className="h-3.5 w-3.5 text-accent" /> Solo tenés {variant?.stock} de
-                stock propio de este color. ¿Es prestado? Registrá el préstamo primero.
-              </p>
+              <div>
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-ink">
+                  <AlertTriangle className="h-3.5 w-3.5 text-accent" /> Solo tenés {variant?.stock} de
+                  stock propio de este color.
+                </p>
+                <BorrowStockDialog
+                  variantId={row.variant_id}
+                  missingQuantity={row.quantity - (variant?.stock ?? 0)}
+                  onBorrowed={(added) => bumpStock(row.variant_id, added)}
+                />
+              </div>
             )}
           </div>
         );

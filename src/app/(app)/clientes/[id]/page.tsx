@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/currency";
 import { variantLabel } from "@/lib/utils/variant-label";
 import { CustomerContactEditor } from "@/components/clientes/customer-contact-editor";
+import { CustomerApartadoRow, type CustomerApartadoData } from "@/components/clientes/customer-apartado-row";
 import { SaleHistoryTable, type SaleHistoryRow } from "@/components/shared/sale-history-table";
 import { updateCustomerNotes } from "../actions";
 
@@ -31,9 +32,14 @@ export default async function ClienteDetallePage({
   // los filtraría a "lo que yo le vendí"), sino una función que trae el
   // historial completo de la clienta a propósito, sin importar quién de
   // las dos hizo cada venta. Ver 0022_privacy_orders_sales.sql.
-  const { data: history } = await supabase.rpc("get_customer_purchase_history", {
-    p_customer_id: id,
-  });
+  const [{ data: history }, { data: apartados }] = await Promise.all([
+    supabase.rpc("get_customer_purchase_history", { p_customer_id: id }),
+    // Mismo motivo que el historial: no se puede consultar `sales`
+    // directo (RLS lo filtraría a "solo lo que yo le vendí"), así que
+    // esto también pasa por una función que trae los apartados de esta
+    // clienta completos, sin importar quién de las dos los vendió.
+    supabase.rpc("get_customer_apartados", { p_customer_id: id }),
+  ]);
 
   const variantIds = [...new Set((history ?? []).map((h) => h.variant_id))];
   const [{ data: variants }, { data: products }, { data: profiles }] = await Promise.all([
@@ -65,9 +71,19 @@ export default async function ClienteDetallePage({
         quantity: item.quantity,
         salePrice: item.sale_price,
         profit: item.profit,
+        paymentStatus: item.payment_status,
       }),
     )
     .sort((a, b) => (a.saleDate < b.saleDate ? 1 : -1));
+
+  const apartadoRows: CustomerApartadoData[] = (apartados ?? []).map((a) => ({
+    id: a.sale_id,
+    saleDate: a.sale_date,
+    total: a.total_price,
+    paid: a.amount_paid,
+    balance: a.balance,
+    status: a.payment_status,
+  }));
 
   // Productos más comprados: se cuentan todas las compras que no hayan
   // sido canceladas (los apartados en curso también cuentan — ya eligió
@@ -145,6 +161,19 @@ export default async function ClienteDetallePage({
           </Button>
         </form>
       </Card>
+
+      {apartadoRows.length > 0 && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Apartados</CardTitle>
+          </CardHeader>
+          <div className="flex flex-col gap-2">
+            {apartadoRows.map((a) => (
+              <CustomerApartadoRow key={a.id} apartado={a} />
+            ))}
+          </div>
+        </Card>
+      )}
 
       {topProducts.length > 0 && (
         <Card className="mt-4">

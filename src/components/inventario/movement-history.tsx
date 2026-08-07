@@ -12,6 +12,9 @@ const TYPE_LABELS: Record<StockMovementType, string> = {
   prestamo_entrada: "Préstamo (entrada)",
   devolucion_salida: "Devolución (salida)",
   devolucion_entrada: "Devolución (entrada)",
+  apartado_cancelado: "Apartado cancelado",
+  ajuste_venta: "Ajuste (edición de venta)",
+  uso_personal: "Uso personal",
 };
 
 const TYPE_SIGN: Record<StockMovementType, "+" | "-" | "·"> = {
@@ -23,6 +26,9 @@ const TYPE_SIGN: Record<StockMovementType, "+" | "-" | "·"> = {
   prestamo_entrada: "+",
   devolucion_salida: "-",
   devolucion_entrada: "+",
+  apartado_cancelado: "+",
+  ajuste_venta: "·",
+  uso_personal: "-",
 };
 
 export interface MovementRow {

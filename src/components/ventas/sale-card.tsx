@@ -45,9 +45,13 @@ export function SaleCard({ sale }: { sale: SaleCardData }) {
         {formatDate(sale.saleDate)} · {sale.sellerName}
       </p>
 
-      <p className="mt-3 text-sm text-ink/70">
-        {sale.products.map((p) => `${p.label} ×${p.quantity}`).join(", ")}
-      </p>
+      <ul className="mt-3 flex flex-col gap-0.5 text-sm text-ink/70">
+        {sale.products.map((p) => (
+          <li key={p.label}>
+            {p.label} ×{p.quantity}
+          </li>
+        ))}
+      </ul>
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <Badge variant={sale.paymentMethod === "transferencia" ? "sage" : "gold"}>

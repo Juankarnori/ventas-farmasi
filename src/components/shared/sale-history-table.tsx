@@ -1,6 +1,8 @@
 import { Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
+import type { PaymentStatus } from "@/lib/types/database.types";
 
 export interface SaleHistoryRow {
   id: string;
@@ -11,6 +13,17 @@ export interface SaleHistoryRow {
   quantity: number;
   salePrice: number;
   profit: number;
+  paymentStatus: PaymentStatus;
+}
+
+function StatusBadge({ status }: { status: PaymentStatus }) {
+  // 'pagado' es el caso común (venta de contado) — no hace falta un
+  // badge para eso, solo se marca lo que necesita aclaración: un
+  // apartado con saldo pendiente, uno ya completado, o uno cancelado.
+  if (status === "pagado") return null;
+  if (status === "con_abonos") return <Badge variant="gold">Con saldo pendiente</Badge>;
+  if (status === "completado") return <Badge variant="sage">Apartado completado</Badge>;
+  return <Badge variant="neutral">Cancelado</Badge>;
 }
 
 export function SaleHistoryTable({ rows }: { rows: SaleHistoryRow[] }) {
@@ -37,7 +50,12 @@ export function SaleHistoryTable({ rows }: { rows: SaleHistoryRow[] }) {
         <Tbody>
           {rows.map((r) => (
             <Tr key={r.id}>
-              <Td className="pl-5">{formatDate(r.saleDate)}</Td>
+              <Td className="pl-5">
+                <div className="flex items-center gap-1.5">
+                  {formatDate(r.saleDate)}
+                  <StatusBadge status={r.paymentStatus} />
+                </div>
+              </Td>
               <Td>{r.productName}</Td>
               <Td className="text-ink/60">{r.customerName ?? "—"}</Td>
               <Td>{r.sellerName}</Td>

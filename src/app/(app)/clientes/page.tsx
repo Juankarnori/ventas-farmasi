@@ -20,7 +20,7 @@ export default async function ClientesPage({
 
   let query = supabase.from("customers").select("*").order("name", { ascending: true });
   if (q) query = query.or(`name.ilike.%${q}%,phone.ilike.%${q}%`);
-  const [{ data: customers }, { data: totals }, followUpTasks] = await Promise.all([
+  const [{ data: customers }, { data: totals }, { data: pendingBalances }, followUpTasks] = await Promise.all([
     query,
     // Clientes es un registro compartido de seguimiento (como Catálogo o
     // Préstamos): el ranking por total gastado tiene que sumar las ventas
@@ -29,6 +29,8 @@ export default async function ClientesPage({
     // sino una función que agrega el negocio entero a propósito. Ver
     // 0022_privacy_orders_sales.sql.
     supabase.rpc("list_customer_totals"),
+    // Badge de "Saldo pendiente": mismo criterio compartido de arriba.
+    supabase.rpc("list_customer_pending_balances"),
     // "Hoy toca contactar": misma función que usa el resumen de Inicio,
     // para que las dos vistas siempre coincidan.
     getPendingFollowUps(supabase),
@@ -36,6 +38,9 @@ export default async function ClientesPage({
 
   const totalsByCustomer = new Map((totals ?? []).map((t) => [t.customer_id, t.total_spent]));
   const purchaseCountByCustomer = new Map((totals ?? []).map((t) => [t.customer_id, t.purchase_count]));
+  const pendingBalanceByCustomer = new Map(
+    (pendingBalances ?? []).map((b) => [b.customer_id, b.pending_balance]),
+  );
 
   const cards: CustomerCardData[] = (customers ?? [])
     .map((c) => ({
@@ -45,6 +50,7 @@ export default async function ClientesPage({
       notes: c.notes,
       totalSpent: totalsByCustomer.get(c.id) ?? 0,
       purchaseCount: purchaseCountByCustomer.get(c.id) ?? 0,
+      pendingBalance: pendingBalanceByCustomer.get(c.id),
     }))
     .sort((a, b) => b.totalSpent - a.totalSpent);
 

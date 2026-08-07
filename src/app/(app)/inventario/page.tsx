@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
 import { StockTable, type StockGroup } from "@/components/inventario/stock-table";
 import { MovementHistory } from "@/components/inventario/movement-history";
+import { InventarioTabs } from "@/components/inventario/inventario-tabs";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils/cn";
 
@@ -111,6 +112,8 @@ export default async function InventarioPage({
         <h1 className="font-display text-3xl text-ink">Inventario</h1>
         <p className="mt-1 text-sm text-ink/60">Stock actual de todas las variantes de color.</p>
       </div>
+
+      <InventarioTabs active="stock" />
 
       <div className="flex w-fit flex-wrap gap-1 rounded-full border border-gold/20 bg-panel/30 p-1">
         {tabs.map((tab) => (
