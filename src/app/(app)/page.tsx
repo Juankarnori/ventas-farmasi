@@ -87,7 +87,13 @@ export default async function InicioPage({
         <StockCarousel items={availableStock} />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      {/*
+        Apiladas verticalmente a propósito, no en fila: una fila de 3
+        columnas obligaba a hacer scroll lateral para ver las que quedaban
+        cortadas en pantallas angostas. Esta es una página de "bajar y
+        mirar", no de desplazarse hacia los costados.
+      */}
+      <div className="flex flex-col gap-4">
         <TopSellersCard products={topProducts} />
         <TopCustomersCard customers={topCustomers} />
         <PendingFollowUpsCard tasks={pendingFollowUps} />

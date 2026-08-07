@@ -6,6 +6,7 @@ export interface CustomerCardData {
   id: string;
   name: string;
   phone: string | null;
+  notes: string | null;
   totalSpent: number;
   purchaseCount: number;
 }
@@ -31,6 +32,10 @@ export function CustomerCard({ customer }: { customer: CustomerCardData }) {
         <p className="text-xs text-ink/50">{customer.phone ?? "Sin teléfono"}</p>
         <WhatsAppButton phone={customer.phone} className="relative z-10 h-5 w-5" />
       </div>
+
+      {/* Solo si hay notas cargadas — nada de placeholder "Sin notas" que
+          ensucie la tarjeta cuando no hay nada que mostrar. */}
+      {customer.notes && <p className="mt-2 line-clamp-3 text-xs text-ink/60">{customer.notes}</p>}
 
       <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
         <div>

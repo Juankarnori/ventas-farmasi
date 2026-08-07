@@ -42,6 +42,7 @@ export default async function ClientesPage({
       id: c.id,
       name: c.name,
       phone: c.phone,
+      notes: c.notes,
       totalSpent: totalsByCustomer.get(c.id) ?? 0,
       purchaseCount: purchaseCountByCustomer.get(c.id) ?? 0,
     }))
