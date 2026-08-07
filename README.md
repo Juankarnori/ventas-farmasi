@@ -81,7 +81,7 @@ Abrí [http://localhost:3000](http://localhost:3000), entrá con Google, y eleg�
 
 1. Subí el repo a GitHub (este proyecto se generó con git local, sin remoto — lo conectás vos).
 2. En Vercel, importá el repo.
-3. En **Environment Variables**, agregá `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+3. En **Environment Variables**, agregá `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `CRON_SECRET` (cualquier string largo al azar — lo usa Vercel para autenticar su propia llamada diaria a `/api/cron/birthday-check`, ver `vercel.json`).
 4. Una vez desplegado, agregá la URL de producción a **Site URL** y **Redirect URLs** en Supabase (paso 2), con `/auth/callback` al final para la redirect URL.
 
 ## Variables de entorno
@@ -90,6 +90,7 @@ Abrí [http://localhost:3000](http://localhost:3000), entrá con Google, y eleg�
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto de Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave pública (anon) del proyecto |
+| `CRON_SECRET` | Autentica la llamada diaria de Vercel Cron a `/api/cron/birthday-check` (revisión de cumpleaños). Solo hace falta en producción/Vercel — en local esa ruta se prueba a mano o desde el botón "Revisar cumpleaños ahora" en Clientes → Reglas de seguimiento, que no la usa. |
 
 ## Estructura
 
@@ -97,14 +98,17 @@ Abrí [http://localhost:3000](http://localhost:3000), entrá con Google, y eleg�
 supabase/migrations/   Esquema SQL versionado (tablas, RLS, funciones, storage)
 supabase/seed.sql       Datos de ejemplo
 src/app/auth/           Login, callback OAuth, reclamo de perfil
-src/app/(app)/          Shell autenticado + los 6 módulos
+src/app/(app)/          Shell autenticado + los 7 módulos
+src/app/api/cron/       Ruta del cron de cumpleaños (Vercel Cron, ver vercel.json)
 src/components/         UI compartida + componentes por módulo
 src/lib/                Clientes de Supabase, validaciones Zod, utils
 ```
 
 ## Alcance de esta versión
 
-Incluido: catálogo, inventario, pedidos, ventas, préstamos, finanzas/dashboard (home), alertas de stock bajo y préstamos pendientes.
+Incluido: catálogo, inventario, pedidos, ventas, préstamos, finanzas/dashboard (home), clientes (registro, seguimiento con reglas configurables y recordatorios por WhatsApp), alertas de stock bajo y préstamos pendientes.
+
+Sobre el seguimiento a clientas: WhatsApp no permite mandar mensajes automáticos sin la API de negocios de Meta (paga, con verificación de negocio). La app arma el mensaje y te avisa a quién te toca contactar cada día — el envío final siempre es un clic tuyo, desde tu propio WhatsApp.
 
 Dejado afuera a propósito (se puede agregar después sin reestructurar nada): modo oscuro, y exportar reportes a Excel/PDF.
 # ventas-farmasi

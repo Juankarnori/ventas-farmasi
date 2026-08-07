@@ -2,18 +2,22 @@ import { whatsappLink } from "@/lib/utils/whatsapp";
 import { cn } from "@/lib/utils/cn";
 
 // Abre un chat directo de WhatsApp con la clienta (click-to-chat de
-// wa.me), sin mensaje precargado. Si no hay teléfono válido, no renderiza
-// nada — el "Sin teléfono" que ya se muestra al lado alcanza para
-// comunicar que no hay número, así que un botón deshabilitado ahí sería
-// redundante.
+// wa.me). Sin `message`, se abre vacío (uso general: ficha de cliente,
+// listado); con `message`, se abre con ese texto ya cargado y editable
+// (uso: tareas de seguimiento, donde el mensaje ya viene armado desde la
+// regla). Si no hay teléfono válido, no renderiza nada — el "Sin
+// teléfono" que ya se muestra al lado alcanza para comunicar que no hay
+// número, así que un botón deshabilitado ahí sería redundante.
 export function WhatsAppButton({
   phone,
+  message,
   className,
 }: {
   phone: string | null | undefined;
+  message?: string;
   className?: string;
 }) {
-  const href = whatsappLink(phone);
+  const href = whatsappLink(phone, message);
 
   if (!href) return null;
 

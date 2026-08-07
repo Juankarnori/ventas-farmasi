@@ -25,6 +25,8 @@ export type LoanStatus = "pendiente" | "devuelto" | "vendido";
 export type ExpenseCategory = "envio" | "empaque" | "publicidad" | "otro";
 export type PaymentStatus = "pagado" | "con_abonos" | "completado" | "cancelado";
 export type AuthorizedEmailStatus = "pendiente" | "activo" | "revocado";
+export type FollowUpTriggerType = "despues_de_venta" | "cumpleanos";
+export type FollowUpTaskStatus = "pendiente" | "hecho" | "omitido";
 
 export interface Database {
   public: {
@@ -206,6 +208,7 @@ export interface Database {
           name: string;
           phone: string | null;
           notes: string | null;
+          birth_date: string | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -214,6 +217,47 @@ export interface Database {
           name: string;
         };
         Update: Partial<Database["public"]["Tables"]["customers"]["Row"]>;
+        Relationships: [];
+      };
+      follow_up_rules: {
+        Row: {
+          id: string;
+          name: string;
+          trigger_type: FollowUpTriggerType;
+          days_after: number | null;
+          message_template: string;
+          active: boolean;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["follow_up_rules"]["Row"]> & {
+          name: string;
+          trigger_type: FollowUpTriggerType;
+          message_template: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["follow_up_rules"]["Row"]>;
+        Relationships: [];
+      };
+      follow_up_tasks: {
+        Row: {
+          id: string;
+          customer_id: string;
+          rule_id: string;
+          due_date: string;
+          status: FollowUpTaskStatus;
+          sale_id: string | null;
+          message_preview: string;
+          created_at: string;
+          completed_at: string | null;
+          completed_by: string | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["follow_up_tasks"]["Row"]> & {
+          customer_id: string;
+          rule_id: string;
+          due_date: string;
+          message_preview: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["follow_up_tasks"]["Row"]>;
         Relationships: [];
       };
       sales: {
@@ -466,6 +510,14 @@ export interface Database {
           total_spent: number;
           purchase_count: number;
         }[];
+      };
+      complete_follow_up_task: {
+        Args: { p_task_id: string; p_status: "hecho" | "omitido" };
+        Returns: void;
+      };
+      run_birthday_check: {
+        Args: Record<string, never>;
+        Returns: void;
       };
     };
   };

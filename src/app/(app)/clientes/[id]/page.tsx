@@ -7,8 +7,8 @@ import { Textarea, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/currency";
 import { variantLabel } from "@/lib/utils/variant-label";
-import { CustomerContactEditor } from "@/components/ventas/customer-contact-editor";
-import { SaleHistoryTable, type SaleHistoryRow } from "@/components/ventas/sale-history-table";
+import { CustomerContactEditor } from "@/components/clientes/customer-contact-editor";
+import { SaleHistoryTable, type SaleHistoryRow } from "@/components/shared/sale-history-table";
 import { updateCustomerNotes } from "../actions";
 
 export default async function ClienteDetallePage({
@@ -95,13 +95,18 @@ export default async function ClienteDetallePage({
   return (
     <div className="mx-auto max-w-2xl">
       <Link
-        href="/ventas/clientes"
+        href="/clientes"
         className="mb-4 inline-flex items-center gap-1 text-sm text-ink/60 hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" /> Volver a clientes
       </Link>
 
-      <CustomerContactEditor customerId={customer.id} name={customer.name} phone={customer.phone} />
+      <CustomerContactEditor
+        customerId={customer.id}
+        name={customer.name}
+        phone={customer.phone}
+        birthDate={customer.birth_date}
+      />
 
       <Card className="mt-6">
         <div className="grid grid-cols-2 gap-4 text-sm">

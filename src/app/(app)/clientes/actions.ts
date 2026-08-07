@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
 import { customerSchema, quickCustomerSchema } from "@/lib/validations/customer";
@@ -40,8 +41,47 @@ export async function createCustomerQuick(
     return { error: error.message };
   }
 
-  revalidatePath("/ventas/clientes");
+  revalidatePath("/clientes");
   return { customer: data };
+}
+
+// Alta completa desde /clientes/nuevo: nombre, teléfono, cumpleaños y
+// notas de una — a diferencia del alta rápida, acá sí importa poder
+// cargar todo de entrada (esta es la puerta de entrada "de verdad" al
+// registro de clientas, no un atajo en medio de otro formulario).
+export async function createCustomer(formData: FormData) {
+  const profile = await getSessionProfile();
+  const supabase = await createClient();
+
+  const parsed = customerSchema.safeParse({
+    name: formData.get("name"),
+    phone: formData.get("phone"),
+    notes: formData.get("notes"),
+    birth_date: formData.get("birth_date"),
+  });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+
+  const { data, error } = await supabase
+    .from("customers")
+    .insert({
+      name: parsed.data.name,
+      phone: parsed.data.phone || null,
+      notes: parsed.data.notes || null,
+      birth_date: parsed.data.birth_date || null,
+      created_by: profile.id,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/clientes");
+  redirect(`/clientes/${data.id}`);
 }
 
 export async function updateCustomerNotes(customerId: string, formData: FormData) {
@@ -59,7 +99,7 @@ export async function updateCustomerNotes(customerId: string, formData: FormData
     throw new Error(error.message);
   }
 
-  revalidatePath(`/ventas/clientes/${customerId}`);
+  revalidatePath(`/clientes/${customerId}`);
 }
 
 export async function updateCustomerContact(customerId: string, formData: FormData) {
@@ -70,6 +110,7 @@ export async function updateCustomerContact(customerId: string, formData: FormDa
     name: formData.get("name"),
     phone: formData.get("phone"),
     notes: formData.get("notes"),
+    birth_date: formData.get("birth_date"),
   });
 
   if (!parsed.success) {
@@ -81,6 +122,7 @@ export async function updateCustomerContact(customerId: string, formData: FormDa
     .update({
       name: parsed.data.name,
       phone: parsed.data.phone || null,
+      birth_date: parsed.data.birth_date || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", customerId);
@@ -89,6 +131,24 @@ export async function updateCustomerContact(customerId: string, formData: FormDa
     throw new Error(error.message);
   }
 
-  revalidatePath(`/ventas/clientes/${customerId}`);
-  revalidatePath("/ventas/clientes");
+  revalidatePath(`/clientes/${customerId}`);
+  revalidatePath("/clientes");
+}
+
+// Resuelve una tarea de "Hoy toca contactar": 'hecho' tras escribirle de
+// verdad, 'omitido' si esta vez no correspondía.
+export async function completeFollowUpTask(taskId: string, status: "hecho" | "omitido") {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("complete_follow_up_task", {
+    p_task_id: taskId,
+    p_status: status,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/clientes");
 }

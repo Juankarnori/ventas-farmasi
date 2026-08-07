@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VentasFilters } from "@/components/ventas/ventas-filters";
-import { SaleHistoryTable, type SaleHistoryRow } from "@/components/ventas/sale-history-table";
+import { SaleHistoryTable, type SaleHistoryRow } from "@/components/shared/sale-history-table";
 import { VentasTabs } from "@/components/ventas/ventas-tabs";
 import { variantLabel } from "@/lib/utils/variant-label";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";

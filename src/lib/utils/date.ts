@@ -9,3 +9,10 @@ export function formatDate(date: string | Date, pattern = "d MMM yyyy") {
 export function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
+
+// "15 de marzo" — a propósito sin año: acá solo importa el día del
+// cumpleaños, no cuántos cumple (ni siquiera lo sabemos con certeza si
+// birth_date se cargó como aproximación).
+export function formatBirthday(date: string) {
+  return formatDate(date, "d 'de' MMMM");
+}

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { UserPlus } from "lucide-react";
 import { Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { createCustomerQuick, type CustomerOption } from "@/app/(app)/ventas/clientes/actions";
+import { createCustomerQuick, type CustomerOption } from "@/app/(app)/clientes/actions";
 
 // Buscador con autocompletado sobre clientas existentes (por nombre o
 // teléfono) + alta rápida inline si no existe. El campo de texto visible

@@ -33,10 +33,14 @@ export function normalizePhoneForWhatsApp(rawPhone: string): string | null {
 }
 
 // `null`/vacío si no hay teléfono válido — así el que llama puede decidir
-// no mostrar el botón en vez de mostrar un link roto.
-export function whatsappLink(phone: string | null | undefined): string | null {
+// no mostrar el botón en vez de mostrar un link roto. `message` es
+// opcional: si se pasa, precarga el texto del chat (el usuario lo puede
+// editar en WhatsApp antes de mandarlo — igual que sin mensaje, esto
+// nunca envía nada solo).
+export function whatsappLink(phone: string | null | undefined, message?: string): string | null {
   if (!phone) return null;
   const number = normalizePhoneForWhatsApp(phone);
   if (!number) return null;
-  return `https://wa.me/${number}`;
+  const base = `https://wa.me/${number}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }

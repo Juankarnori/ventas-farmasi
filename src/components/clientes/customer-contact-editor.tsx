@@ -5,16 +5,19 @@ import { Pencil, X } from "lucide-react";
 import { Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { WhatsAppButton } from "@/components/shared/whatsapp-button";
-import { updateCustomerContact } from "@/app/(app)/ventas/clientes/actions";
+import { formatBirthday } from "@/lib/utils/date";
+import { updateCustomerContact } from "@/app/(app)/clientes/actions";
 
 export function CustomerContactEditor({
   customerId,
   name,
   phone,
+  birthDate,
 }: {
   customerId: string;
   name: string;
   phone: string | null;
+  birthDate: string | null;
 }) {
   const [editing, setEditing] = useState(false);
   const action = updateCustomerContact.bind(null, customerId);
@@ -28,6 +31,7 @@ export function CustomerContactEditor({
             <p className="text-sm text-ink/60">{phone ?? "Sin teléfono"}</p>
             <WhatsAppButton phone={phone} />
           </div>
+          {birthDate && <p className="mt-0.5 text-sm text-ink/60">🎂 {formatBirthday(birthDate)}</p>}
         </div>
         <button
           type="button"
@@ -54,6 +58,10 @@ export function CustomerContactEditor({
       <div className="w-44">
         <Label htmlFor="phone">Teléfono</Label>
         <Input id="phone" name="phone" defaultValue={phone ?? ""} />
+      </div>
+      <div className="w-44">
+        <Label htmlFor="birth_date">Cumpleaños</Label>
+        <Input id="birth_date" name="birth_date" type="date" defaultValue={birthDate ?? ""} />
       </div>
       <Button type="submit" size="sm">
         Guardar

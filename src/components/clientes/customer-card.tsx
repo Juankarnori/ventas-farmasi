@@ -21,7 +21,7 @@ export function CustomerCard({ customer }: { customer: CustomerCardData }) {
     // su propio click en vez de disparar la navegación de la tarjeta.
     <div className="relative rounded-2xl border border-gold/20 bg-panel/40 p-4 shadow-sm transition-shadow hover:shadow-md">
       <Link
-        href={`/ventas/clientes/${customer.id}`}
+        href={`/clientes/${customer.id}`}
         aria-label={`Ver ficha de ${customer.name}`}
         className="absolute inset-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       />

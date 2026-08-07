@@ -5,7 +5,7 @@ import { Label, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SaleLineItems, type SellableProduct } from "./sale-line-items";
 import { CustomerCombobox } from "./customer-combobox";
-import type { CustomerOption } from "@/app/(app)/ventas/clientes/actions";
+import type { CustomerOption } from "@/app/(app)/clientes/actions";
 import { todayISO } from "@/lib/utils/date";
 
 export function SaleForm({

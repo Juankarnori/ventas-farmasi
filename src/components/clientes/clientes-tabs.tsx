@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
-// "Clientes" se mudó a su propia sección de nivel superior (/clientes) —
-// ya no es una pestaña de Ventas.
-export function VentasTabs({ active }: { active: "ventas" | "apartados" }) {
+export function ClientesTabs({ active }: { active: "clientes" | "reglas" }) {
   const tabs = [
-    { value: "ventas" as const, label: "Ventas", href: "/ventas" },
-    { value: "apartados" as const, label: "Apartados", href: "/ventas/apartados" },
+    { value: "clientes" as const, label: "Clientes", href: "/clientes" },
+    { value: "reglas" as const, label: "Reglas de seguimiento", href: "/clientes/reglas" },
   ];
 
   return (
