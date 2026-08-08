@@ -65,13 +65,31 @@ export async function updateFollowUpRule(ruleId: string, formData: FormData) {
   revalidatePath("/clientes/reglas");
 }
 
-// No se borran (se perdería a qué regla apuntan las tareas ya generadas
-// por ella) — se desactivan/reactivan.
+// Alternativa a borrar cuando la regla ya tiene historial (ver
+// deleteFollowUpRule más abajo): se desactiva/reactiva sin perder a qué
+// regla apuntan las tareas ya generadas por ella.
 export async function setFollowUpRuleActive(ruleId: string, active: boolean) {
   await getSessionProfile();
   const supabase = await createClient();
 
   const { error } = await supabase.from("follow_up_rules").update({ active }).eq("id", ruleId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/clientes/reglas");
+}
+
+// Borra la regla si nunca generó ninguna tarea; si ya generó alguna
+// (sin importar su estado), delete_follow_up_rule rechaza el borrado con
+// un mensaje explicando por qué y sugiriendo desactivar en su lugar — ese
+// mensaje se muestra tal cual, no se reformula acá.
+export async function deleteFollowUpRule(ruleId: string) {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("delete_follow_up_rule", { p_rule_id: ruleId });
 
   if (error) {
     throw new Error(error.message);

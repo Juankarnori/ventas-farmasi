@@ -621,6 +621,10 @@ export interface Database {
         Args: { p_rule_id: string };
         Returns: number;
       };
+      delete_follow_up_rule: {
+        Args: { p_rule_id: string };
+        Returns: void;
+      };
       get_customer_apartados: {
         Args: { p_customer_id: string };
         Returns: {

@@ -81,13 +81,16 @@ export function FollowUpRuleForm({
           name="message_template"
           rows={3}
           defaultValue={defaults?.message_template}
-          placeholder="Ej: Hola {nombre}! Quería preguntarte cómo te fue con {producto} 💛"
+          placeholder="Ej: Hola {nombre}! Quería preguntarte cómo te fue con {productos} 💛"
           required
         />
         <p className="mt-1 text-xs text-ink/50">
           Podés usar <code className="rounded bg-panel/60 px-1">{"{nombre}"}</code> y{" "}
-          <code className="rounded bg-panel/60 px-1">{"{producto}"}</code> — se reemplazan solos al
-          generar cada mensaje.
+          <code className="rounded bg-panel/60 px-1">{"{productos}"}</code> — se reemplazan solos al
+          generar cada mensaje. Si la venta tuvo más de un producto, se listan todos (ej. &quot;Reviving
+          Shampoo y Reviving Aceite Capilar&quot;).{" "}
+          <code className="rounded bg-panel/60 px-1">{"{producto}"}</code> (singular) también funciona,
+          por si ya tenías reglas guardadas así.
         </p>
       </div>
 
