@@ -1,16 +1,24 @@
 // Cuánto vale la deuda de un préstamo "vendido" (no devuelto): al costo
 // si era para ayudar a completar un pedido/reposición, a precio de venta
 // si era para que la otra lo venda ella misma (ahí quien prestó perdió la
-// ganancia que hubiera hecho). Una sola función para los dos lugares que
-// necesitan este número (Préstamos y Finanzas), para que no se pueda
+// ganancia que hubiera hecho), o al precio manual de promoción si el
+// producto se compró a un precio puntual distinto de los dos anteriores
+// (ej. protectores solares en oferta). Una sola función para los lugares
+// que necesitan este número (Préstamos y Finanzas), para que no se pueda
 // calcular distinto en cada uno.
 export function loanDebtAmount(loan: {
   quantity: number;
   unit_cost: number;
   unit_price: number;
-  valuation_type: "costo" | "pvp";
+  valuation_type: "costo" | "pvp" | "promocion";
+  custom_price: number | null;
 }): number {
-  const unitValue = loan.valuation_type === "pvp" ? loan.unit_price : loan.unit_cost;
+  const unitValue =
+    loan.valuation_type === "promocion"
+      ? (loan.custom_price ?? 0)
+      : loan.valuation_type === "pvp"
+        ? loan.unit_price
+        : loan.unit_cost;
   return unitValue * loan.quantity;
 }
 

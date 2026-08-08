@@ -25,7 +25,7 @@ export type StockMovementType =
   | "uso_personal";
 export type OrderStatus = "pendiente" | "recibido";
 export type LoanStatus = "pendiente" | "devuelto" | "vendido";
-export type LoanValuationType = "costo" | "pvp";
+export type LoanValuationType = "costo" | "pvp" | "promocion";
 export type LoanSettlementMethod = "efectivo" | "transferencia" | "producto";
 export type ExpenseCategory = "envio" | "empaque" | "publicidad" | "otro";
 export type PaymentStatus = "pagado" | "con_abonos" | "completado" | "cancelado";
@@ -344,7 +344,9 @@ export interface Database {
           unit_cost: number;
           unit_price: number;
           valuation_type: LoanValuationType;
+          custom_price: number | null;
           settlement_method: LoanSettlementMethod | null;
+          settlement_amount: number | null;
           settlement_bank_note: string | null;
           debt_settled_at: string | null;
           created_by: string | null;
@@ -481,6 +483,7 @@ export interface Database {
           p_to_profile_id: string;
           p_note: string | null;
           p_valuation_type?: LoanValuationType;
+          p_custom_price?: number | null;
         };
         Returns: string;
       };
@@ -491,6 +494,7 @@ export interface Database {
           p_quantity: number;
           p_valuation_type: LoanValuationType;
           p_note: string | null;
+          p_custom_price?: number | null;
         };
         Returns: void;
       };
@@ -498,6 +502,7 @@ export interface Database {
         Args: {
           p_loan_id: string;
           p_settlement_method: LoanSettlementMethod;
+          p_settlement_amount: number;
           p_settlement_bank_note?: string | null;
         };
         Returns: void;

@@ -95,7 +95,7 @@ export default async function FinanzasPage({
 
   const { data: unsettledLoans } = await supabase
     .from("loans")
-    .select("from_profile_id, to_profile_id, quantity, unit_cost, unit_price, valuation_type")
+    .select("from_profile_id, to_profile_id, quantity, unit_cost, unit_price, valuation_type, custom_price")
     .eq("status", "vendido")
     .is("debt_settled_at", null);
 

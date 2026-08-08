@@ -50,12 +50,20 @@ export function AlertsPanel({
             <div className="mb-2 flex items-center gap-2 text-sm font-medium text-ink">
               <AlertTriangle className="h-4 w-4 text-accent" /> Stock bajo
             </div>
-            <ul className="flex flex-wrap gap-2">
+            {/* Lista vertical, un producto por línea — igual que las
+                tarjetas de resumen de Inicio (ver TopSellersCard): con
+                varios productos con stock bajo a la vez, "de corrido" en
+                la misma fila se hacía difícil de leer. */}
+            <ul className="flex flex-col divide-y divide-ink/10">
               {lowStockProducts.map((p) => (
                 <li key={p.id}>
-                  <Link href={`/catalogo/${p.id}`}>
-                    <Badge variant="accent">
-                      {p.name} · {p.stock} u.
+                  <Link
+                    href={`/catalogo/${p.id}`}
+                    className="flex items-center justify-between gap-3 py-2 text-sm hover:text-primary"
+                  >
+                    <span className="text-ink">{p.name}</span>
+                    <Badge variant="accent" className="shrink-0">
+                      {p.stock} u.
                     </Badge>
                   </Link>
                 </li>

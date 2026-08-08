@@ -77,6 +77,7 @@ export default async function PrestamoDetallePage({
     loanDate: loan.loan_date,
     note: loan.note,
     valuationType: loan.valuation_type,
+    customPrice: loan.custom_price,
   };
 
   const updateAction = updateLoan.bind(null, loan.id);
@@ -120,13 +121,21 @@ export default async function PrestamoDetallePage({
             {loan.quantity} unidad{loan.quantity === 1 ? "" : "es"} — se vendió en vez de devolverse, así
             que {toName} le debe a {fromName}{" "}
             <span className="font-mono font-semibold text-ink">{formatCurrency(debtAmount)}</span>{" "}
-            ({loan.valuation_type === "pvp" ? "a precio de venta" : "al costo"}).
+            (
+            {loan.valuation_type === "pvp"
+              ? "a precio de venta"
+              : loan.valuation_type === "promocion"
+                ? "a precio de promoción"
+                : "al costo"}
+            ).
             {loan.debt_settled_at && " Esta deuda ya está liquidada."}
           </div>
           <LoanSettlementEditor
             loanId={loan.id}
             settlementMethod={loan.settlement_method}
+            settlementAmount={loan.settlement_amount}
             settlementBankNote={loan.settlement_bank_note}
+            suggestedAmount={debtAmount}
             action={settlementAction}
           />
         </>

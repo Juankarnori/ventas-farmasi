@@ -5,6 +5,7 @@ import { Label, Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
+import type { LoanValuationType } from "@/lib/types/database.types";
 
 export interface LoanableProduct {
   id: string;
@@ -49,6 +50,7 @@ export function LoanForm({
 
   const [productId, setProductId] = useState(() => products[0]?.id ?? "");
   const [variantId, setVariantId] = useState(products[0]?.variants[0]?.id ?? "");
+  const [valuationType, setValuationType] = useState<LoanValuationType>("costo");
 
   const selectedProduct = productById.get(productId);
 
@@ -128,16 +130,30 @@ export function LoanForm({
 
       <div>
         <Label htmlFor="valuation_type">Si no se devuelve, se valora...</Label>
-        <Select id="valuation_type" name="valuation_type" defaultValue="costo">
+        <Select
+          id="valuation_type"
+          name="valuation_type"
+          value={valuationType}
+          onChange={(e) => setValuationType(e.target.value as LoanValuationType)}
+        >
           <option value="costo">Al costo (para completar un pedido/reposición)</option>
           <option value="pvp">A precio de venta (para que lo venda ella)</option>
+          <option value="promocion">En promoción (precio manual)</option>
         </Select>
         <p className="mt-1 text-xs text-ink/50">
           Si el préstamo termina marcado como &quot;vendido&quot; en vez de devuelto, la deuda se
           calcula con este valor — a costo si era para ayudar a completar algo, a precio de venta si
-          quien prestó pierde la ganancia que hubiera hecho vendiéndolo ella misma.
+          quien prestó pierde la ganancia que hubiera hecho vendiéndolo ella misma, o al precio de
+          promoción si el producto se compró puntualmente a un precio distinto de los dos anteriores.
         </p>
       </div>
+
+      {valuationType === "promocion" && (
+        <div className="w-40">
+          <Label htmlFor="custom_price">Precio de promoción (por unidad)</Label>
+          <Input id="custom_price" name="custom_price" type="number" min={0.01} step="0.01" required />
+        </div>
+      )}
 
       <div>
         <Label htmlFor="note">Nota (opcional)</Label>

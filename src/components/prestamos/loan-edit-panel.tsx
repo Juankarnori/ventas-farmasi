@@ -10,12 +10,14 @@ import { Label, Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
 import { formatDate } from "@/lib/utils/date";
+import { formatCurrency } from "@/lib/utils/currency";
 import type { LoanableProduct } from "./loan-form";
 import type { LoanValuationType, LoanSettlementMethod } from "@/lib/types/database.types";
 
 const VALUATION_LABEL: Record<LoanValuationType, string> = {
   costo: "Al costo",
   pvp: "A precio de venta",
+  promocion: "En promoción",
 };
 
 export interface LoanEditData {
@@ -28,6 +30,7 @@ export interface LoanEditData {
   loanDate: string;
   note: string | null;
   valuationType: LoanValuationType;
+  customPrice: number | null;
 }
 
 // Edición completa de un préstamo mientras sigue 'pendiente' (variante,
@@ -78,6 +81,7 @@ export function LoanEditPanel({
 
   const [productId, setProductId] = useState(() => productOfVariant?.id ?? products[0]?.id ?? "");
   const [variantId, setVariantId] = useState(loan.variantId);
+  const [valuationType, setValuationType] = useState(loan.valuationType);
   const selectedProduct = productById.get(productId);
 
   const productOptions =
@@ -95,6 +99,10 @@ export function LoanEditPanel({
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     if (skipConfirmRef.current) {
       skipConfirmRef.current = false;
+      // Se confirmó desde el diálogo — la submission de verdad sigue su
+      // curso acá, así que recién ahora se vuelve a modo lectura (ver
+      // comentario más abajo sobre por qué esto importa).
+      setEditing(false);
       return;
     }
 
@@ -110,7 +118,16 @@ export function LoanEditPanel({
     if (changesStock) {
       e.preventDefault();
       setConfirmOpen(true);
+      return;
     }
+
+    // Nada que confirmar: la submission sigue de largo. Volver a modo
+    // lectura ACÁ (antes ni pasaba) es lo que le da a esta pantalla una
+    // señal clara de "esto se guardó" — sin esto, el formulario se
+    // quedaba tal cual estaba con los valores que la usuaria ya había
+    // tipeado, así que un guardado fallido o exitoso se veían exactamente
+    // igual en pantalla.
+    setEditing(false);
   }
 
   function confirmAndSubmit() {
@@ -139,7 +156,10 @@ export function LoanEditPanel({
           </button>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Badge variant="sage">{VALUATION_LABEL[loan.valuationType]}</Badge>
+          <Badge variant="sage">
+            {VALUATION_LABEL[loan.valuationType]}
+            {loan.valuationType === "promocion" && loan.customPrice != null && ` · ${formatCurrency(loan.customPrice)}`}
+          </Badge>
         </div>
         {loan.note && <p className="mt-3 text-sm text-ink/70">{loan.note}</p>}
       </Card>
@@ -194,11 +214,32 @@ export function LoanEditPanel({
 
           <div>
             <Label htmlFor="valuation_type">Si no se devuelve, se valora...</Label>
-            <Select id="valuation_type" name="valuation_type" defaultValue={loan.valuationType}>
+            <Select
+              id="valuation_type"
+              name="valuation_type"
+              value={valuationType}
+              onChange={(e) => setValuationType(e.target.value as LoanValuationType)}
+            >
               <option value="costo">Al costo (para completar un pedido/reposición)</option>
               <option value="pvp">A precio de venta (para que lo venda ella)</option>
+              <option value="promocion">En promoción (precio manual)</option>
             </Select>
           </div>
+
+          {valuationType === "promocion" && (
+            <div className="w-40">
+              <Label htmlFor="custom_price">Precio de promoción (por unidad)</Label>
+              <Input
+                id="custom_price"
+                name="custom_price"
+                type="number"
+                min={0.01}
+                step="0.01"
+                defaultValue={loan.customPrice ?? ""}
+                required
+              />
+            </div>
+          )}
 
           <div>
             <Label htmlFor="note">Nota (opcional)</Label>
@@ -244,12 +285,19 @@ export function LoanEditPanel({
 export function LoanSettlementEditor({
   loanId,
   settlementMethod,
+  settlementAmount,
   settlementBankNote,
+  // Deuda calculada (loanDebtAmount) — precarga el campo de monto con este
+  // valor sugerido; queda editable por si hubo un ajuste manual entre las
+  // dos (ej. redondeo, descuento de último momento).
+  suggestedAmount,
   action,
 }: {
   loanId: string;
   settlementMethod: LoanSettlementMethod | null;
+  settlementAmount: number | null;
   settlementBankNote: string | null;
+  suggestedAmount: number;
   action: (formData: FormData) => void | Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
@@ -269,6 +317,7 @@ export function LoanSettlementEditor({
             {settlementMethod ? (
               <span>
                 {METHOD_LABEL[settlementMethod]}
+                {settlementAmount != null && ` · ${formatCurrency(settlementAmount)}`}
                 {settlementBankNote && ` · ${settlementBankNote}`}
               </span>
             ) : (
@@ -295,6 +344,18 @@ export function LoanSettlementEditor({
         id={`loan-settlement-${loanId}`}
         className="flex flex-wrap items-end gap-3"
       >
+        <div className="w-32">
+          <Label htmlFor="settlement_amount">Monto pagado</Label>
+          <Input
+            id="settlement_amount"
+            name="settlement_amount"
+            type="number"
+            min={0}
+            step="0.01"
+            defaultValue={settlementAmount ?? suggestedAmount}
+            required
+          />
+        </div>
         <div className="w-56">
           <Label htmlFor="settlement_method">Cómo se pagó/devolvió</Label>
           <Select

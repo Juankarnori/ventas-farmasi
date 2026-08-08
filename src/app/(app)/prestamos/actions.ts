@@ -8,8 +8,21 @@ import type { LoanValuationType, LoanSettlementMethod } from "@/lib/types/databa
 
 function readValuationType(formData: FormData): LoanValuationType {
   const raw = String(formData.get("valuation_type") ?? "costo");
-  if (raw !== "costo" && raw !== "pvp") {
+  if (raw !== "costo" && raw !== "pvp" && raw !== "promocion") {
     throw new Error("Tipo de valoración inválido");
+  }
+  return raw;
+}
+
+// Solo se usa (y solo se manda al server) cuando valuation_type =
+// 'promocion' — para 'costo'/'pvp' el precio sale calculado del producto,
+// no hace falta nada acá. El RPC igual vuelve a validar esto (nunca
+// confiar solo en el chequeo del cliente).
+function readCustomPrice(formData: FormData, valuationType: LoanValuationType): number | null {
+  if (valuationType !== "promocion") return null;
+  const raw = Number(formData.get("custom_price"));
+  if (!Number.isFinite(raw) || raw <= 0) {
+    throw new Error("Ingresá el precio de promoción de esta unidad");
   }
   return raw;
 }
@@ -23,6 +36,7 @@ export async function createLoan(formData: FormData) {
   const direction = String(formData.get("direction") ?? "");
   const note = String(formData.get("note") ?? "").trim() || null;
   const valuationType = readValuationType(formData);
+  const customPrice = readCustomPrice(formData, valuationType);
   const [fromProfileId, toProfileId] = direction.split(":");
 
   if (!variantId || !fromProfileId || !toProfileId) {
@@ -40,6 +54,7 @@ export async function createLoan(formData: FormData) {
     p_to_profile_id: toProfileId,
     p_note: note,
     p_valuation_type: valuationType,
+    p_custom_price: customPrice,
   });
 
   if (error) {
@@ -63,6 +78,7 @@ export async function updateLoan(loanId: string, formData: FormData) {
   const quantity = Number(formData.get("quantity"));
   const note = String(formData.get("note") ?? "").trim() || null;
   const valuationType = readValuationType(formData);
+  const customPrice = readCustomPrice(formData, valuationType);
 
   if (!variantId) {
     throw new Error("Elegí un producto");
@@ -77,6 +93,7 @@ export async function updateLoan(loanId: string, formData: FormData) {
     p_quantity: quantity,
     p_valuation_type: valuationType,
     p_note: note,
+    p_custom_price: customPrice,
   });
 
   if (error) {
@@ -101,11 +118,17 @@ export async function updateLoanSettlement(loanId: string, formData: FormData) {
     throw new Error("Método inválido");
   }
   const settlementMethod: LoanSettlementMethod = raw;
+  const settlementAmount = Number(formData.get("settlement_amount"));
   const bankNote = String(formData.get("settlement_bank_note") ?? "").trim() || null;
+
+  if (!Number.isFinite(settlementAmount) || settlementAmount < 0) {
+    throw new Error("El monto pagado tiene que ser mayor o igual a 0");
+  }
 
   const { error } = await supabase.rpc("update_loan_settlement", {
     p_loan_id: loanId,
     p_settlement_method: settlementMethod,
+    p_settlement_amount: settlementAmount,
     p_settlement_bank_note: bankNote,
   });
 
