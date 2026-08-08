@@ -279,6 +279,11 @@ export async function markItemDelivered(saleId: string, saleItemId: string) {
   revalidatePath(`/ventas/apartados/${saleId}`);
   revalidatePath("/ventas/apartados");
   revalidatePath("/finanzas");
+  // Si esta era la última entrega pendiente de la venta, la tarea de
+  // seguimiento post-venta (si ya venció) tiene que aparecer en "Hoy toca
+  // contactar" de inmediato — esa vista vive en Clientes y en Inicio.
+  revalidatePath("/clientes");
+  revalidatePath("/");
 }
 
 export async function cancelApartado(saleId: string) {

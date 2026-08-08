@@ -604,6 +604,10 @@ export interface Database {
         Args: Record<string, never>;
         Returns: { customer_id: string; pending_balance: number }[];
       };
+      get_undelivered_sale_ids: {
+        Args: Record<string, never>;
+        Returns: { sale_id: string }[];
+      };
       get_customer_apartados: {
         Args: { p_customer_id: string };
         Returns: {
