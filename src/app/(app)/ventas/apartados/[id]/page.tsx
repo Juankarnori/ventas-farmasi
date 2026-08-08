@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ActionButton } from "@/components/ui/action-button";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import { variantLabel } from "@/lib/utils/variant-label";
@@ -137,14 +138,14 @@ export default async function ApartadoDetallePage({
         <Check className="h-3.5 w-3.5" /> Entregado
       </span>
     ) : (
-      <form action={markItemDelivered.bind(null, sale.id, item.id)}>
-        <button
-          type="submit"
-          className="rounded-full px-3 py-1.5 text-xs text-primary hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
-        >
-          Marcar entregado
-        </button>
-      </form>
+      <ActionButton
+        action={markItemDelivered.bind(null, sale.id, item.id)}
+        variant="ghost"
+        size="sm"
+        className="px-3 py-1.5 text-xs text-primary hover:bg-primary/10"
+      >
+        Marcar entregado
+      </ActionButton>
     ),
   }));
 

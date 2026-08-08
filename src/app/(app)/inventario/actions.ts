@@ -6,15 +6,19 @@ import { getSessionProfile } from "@/lib/auth/get-session-profile";
 import { todayISO } from "@/lib/utils/date";
 
 // Se llama directamente desde el StockStepper (no como form action) para
-// que el componente pueda envolverla en try/catch y mostrar el error
-// inline junto al selector +/- — nunca dejar que un ajuste inválido tire
-// a la pantalla genérica de error de Next.js.
-export async function adjustStock(variantId: string, delta: number) {
+// que el componente pueda mostrar el error inline junto al selector +/-.
+// Devuelve el error en vez de tirarlo (`throw`) a propósito: en
+// producción, Next.js oculta el mensaje real de cualquier excepción no
+// atrapada que salga de una Server Action y lo reemplaza por un texto
+// genérico + digest — un try/catch del lado del cliente ya no alcanza
+// para mostrar el motivo real, hace falta que nunca se lance como
+// excepción para empezar.
+export async function adjustStock(variantId: string, delta: number): Promise<{ error?: string }> {
   await getSessionProfile();
   const supabase = await createClient();
 
   if (!Number.isFinite(delta) || delta === 0) {
-    throw new Error("Ingresá una cantidad distinta de 0");
+    return { error: "Ingresá una cantidad distinta de 0" };
   }
 
   const { error } = await supabase.rpc("adjust_stock", {
@@ -24,11 +28,12 @@ export async function adjustStock(variantId: string, delta: number) {
   });
 
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   revalidatePath("/inventario");
   revalidatePath("/catalogo");
+  return {};
 }
 
 // Uso personal: descuenta stock propio sin pasar por Ventas ni por

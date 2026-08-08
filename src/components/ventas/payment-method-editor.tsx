@@ -16,9 +16,24 @@ export function PaymentMethodEditor({
 }: {
   paymentMethod: PaymentMethod;
   bankNote: string | null;
-  action: (formData: FormData) => void | Promise<void>;
+  action: (formData: FormData) => Promise<{ error?: string }>;
 }) {
   const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const result = await action(new FormData(e.currentTarget));
+    setBusy(false);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      setEditing(false);
+    }
+  }
 
   if (!editing) {
     return (
@@ -40,19 +55,23 @@ export function PaymentMethodEditor({
   }
 
   return (
-    <form action={action} onSubmit={() => setEditing(false)} className="flex flex-wrap items-end gap-2">
-      <PaymentMethodField defaultMethod={paymentMethod} defaultBankNote={bankNote} />
-      <Button type="submit" size="sm">
-        Guardar
-      </Button>
-      <button
-        type="button"
-        onClick={() => setEditing(false)}
-        aria-label="Cancelar edición"
-        className="rounded-full p-2 text-ink/40 hover:bg-ink/5"
-      >
-        <X className="h-4 w-4" />
-      </button>
-    </form>
+    <div className="flex flex-col gap-1.5">
+      <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2">
+        <PaymentMethodField defaultMethod={paymentMethod} defaultBankNote={bankNote} />
+        <Button type="submit" size="sm" disabled={busy}>
+          {busy ? "Guardando..." : "Guardar"}
+        </Button>
+        <button
+          type="button"
+          onClick={() => setEditing(false)}
+          disabled={busy}
+          aria-label="Cancelar edición"
+          className="rounded-full p-2 text-ink/40 hover:bg-ink/5"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </form>
+      {error && <p className="rounded-md bg-accent/20 px-2 py-1 text-xs text-ink">{error}</p>}
+    </div>
   );
 }

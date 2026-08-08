@@ -40,7 +40,13 @@ export async function createOrder(formData: FormData) {
 // número de stock, así que reemplazar sus renglones enteros (borrar +
 // reinsertar) y recalcular el total es seguro — no hay stock_movements
 // ni nada más que dependa de estos order_items puntuales.
-export async function updateOrder(orderId: string, formData: FormData) {
+//
+// Devuelve { error? } en vez de tirar una excepción: en producción,
+// Next.js oculta el mensaje real de cualquier throw no atrapado en una
+// Server Action y lo reemplaza por un texto genérico + digest — un
+// try/catch del lado del cliente ya no alcanza para mostrar el motivo
+// real, hace falta que nunca se lance como excepción para empezar.
+export async function updateOrder(orderId: string, formData: FormData): Promise<{ error?: string }> {
   await getSessionProfile();
   const supabase = await createClient();
 
@@ -54,13 +60,14 @@ export async function updateOrder(orderId: string, formData: FormData) {
     // También cae acá si el pedido existe pero es de otra usuaria (no
     // admin): la RLS de `orders` ya lo esconde, así que para quien llama
     // es indistinguible de "no existe" — el mensaje genérico es correcto.
-    throw new Error("Pedido no encontrado.");
+    return { error: "Pedido no encontrado." };
   }
 
   if (order.status !== "pendiente") {
-    throw new Error(
-      "Este pedido ya fue recibido y afectó el stock — no se puede editar. Si faltó o sobró algo, hacé un ajuste manual desde Inventario.",
-    );
+    return {
+      error:
+        "Este pedido ya fue recibido y afectó el stock — no se puede editar. Si faltó o sobró algo, hacé un ajuste manual desde Inventario.",
+    };
   }
 
   const itemsRaw = String(formData.get("items") ?? "[]");
@@ -69,11 +76,11 @@ export async function updateOrder(orderId: string, formData: FormData) {
   try {
     items = JSON.parse(itemsRaw);
   } catch {
-    throw new Error("Los productos del pedido no son válidos");
+    return { error: "Los productos del pedido no son válidos" };
   }
 
   if (!Array.isArray(items) || items.length === 0) {
-    throw new Error("El pedido necesita al menos un producto");
+    return { error: "El pedido necesita al menos un producto" };
   }
 
   const parsedItems = items as { variant_id: string; quantity: number; unit_cost: number }[];
@@ -88,17 +95,17 @@ export async function updateOrder(orderId: string, formData: FormData) {
 
   for (const item of parsedItems) {
     if (!productIdByVariant.has(item.variant_id)) {
-      throw new Error("Uno de los productos del pedido ya no existe en el catálogo");
+      return { error: "Uno de los productos del pedido ya no existe en el catálogo" };
     }
     if (!(item.quantity > 0)) {
-      throw new Error("Las cantidades tienen que ser mayores a 0");
+      return { error: "Las cantidades tienen que ser mayores a 0" };
     }
   }
 
   const { error: deleteError } = await supabase.from("order_items").delete().eq("order_id", orderId);
 
   if (deleteError) {
-    throw new Error(deleteError.message);
+    return { error: deleteError.message };
   }
 
   const { error: insertError } = await supabase.from("order_items").insert(
@@ -112,7 +119,7 @@ export async function updateOrder(orderId: string, formData: FormData) {
   );
 
   if (insertError) {
-    throw new Error(insertError.message);
+    return { error: insertError.message };
   }
 
   const totalCost = parsedItems.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
@@ -123,25 +130,27 @@ export async function updateOrder(orderId: string, formData: FormData) {
     .eq("id", orderId);
 
   if (updateError) {
-    throw new Error(updateError.message);
+    return { error: updateError.message };
   }
 
   revalidatePath(`/pedidos/${orderId}`);
   revalidatePath("/pedidos");
+  return {};
 }
 
-export async function markOrderReceived(orderId: string) {
+export async function markOrderReceived(orderId: string): Promise<{ error?: string }> {
   await getSessionProfile();
   const supabase = await createClient();
 
   const { error } = await supabase.rpc("mark_order_received", { p_order_id: orderId });
 
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   revalidatePath("/pedidos");
   revalidatePath("/inventario");
   revalidatePath("/catalogo");
   revalidatePath(`/pedidos/${orderId}`);
+  return {};
 }

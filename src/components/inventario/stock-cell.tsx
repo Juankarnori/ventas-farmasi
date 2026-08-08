@@ -29,13 +29,9 @@ export function StockCell({
   }
 
   async function handleAdjust(delta: number) {
-    try {
-      await adjustStock(variantId, delta);
-      router.refresh();
-      return {};
-    } catch (e) {
-      return { error: e instanceof Error ? e.message : "No se pudo ajustar el stock. Intentá de nuevo." };
-    }
+    const result = await adjustStock(variantId, delta);
+    if (!result.error) router.refresh();
+    return result;
   }
 
   return <StockStepper value={stock} onAdjust={handleAdjust} />;

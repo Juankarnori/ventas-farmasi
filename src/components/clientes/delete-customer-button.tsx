@@ -23,20 +23,17 @@ export function DeleteCustomerButton({
   async function confirmDelete() {
     setBusy(true);
     setError(null);
-    try {
-      const { result } = await deleteCustomer(customerId);
-      if (result === "archived") {
-        // Tenía ventas o seguimientos asociados — se archivó en vez de
-        // borrarse de verdad. Se queda en el diálogo mostrando esto en
-        // vez de navegar directo, para que no parezca que no pasó nada.
-        setArchived(true);
-      } else {
-        router.push("/clientes");
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo eliminar. Intentá de nuevo.");
-    } finally {
-      setBusy(false);
+    const { result, error } = await deleteCustomer(customerId);
+    setBusy(false);
+    if (error) {
+      setError(error);
+    } else if (result === "archived") {
+      // Tenía ventas o seguimientos asociados — se archivó en vez de
+      // borrarse de verdad. Se queda en el diálogo mostrando esto en
+      // vez de navegar directo, para que no parezca que no pasó nada.
+      setArchived(true);
+    } else {
+      router.push("/clientes");
     }
   }
 

@@ -8,7 +8,18 @@ import { cancelApartado } from "@/app/(app)/ventas/actions";
 
 export function CancelApartadoButton({ saleId }: { saleId: string }) {
   const [open, setOpen] = useState(false);
-  const action = cancelApartado.bind(null, saleId);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirmCancel() {
+    setBusy(true);
+    setError(null);
+    // Si sale bien, cancelApartado redirige (no vuelve a devolver el
+    // control acá) — solo hay que manejar el caso de error.
+    const result = await cancelApartado(saleId);
+    setBusy(false);
+    if (result?.error) setError(result.error);
+  }
 
   return (
     <>
@@ -22,15 +33,14 @@ export function CancelApartadoButton({ saleId }: { saleId: string }) {
             como historial, pero el apartado se marca como cancelado. Esta acción no se puede
             deshacer.
           </p>
+          {error && <p className="rounded-md bg-accent/20 px-2 py-1 text-xs text-ink">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
               Volver
             </Button>
-            <form action={action}>
-              <Button type="submit" variant="outline">
-                Sí, cancelar apartado
-              </Button>
-            </form>
+            <Button type="button" variant="outline" onClick={confirmCancel} disabled={busy}>
+              {busy ? "Cancelando..." : "Sí, cancelar apartado"}
+            </Button>
           </div>
         </div>
       </Dialog>

@@ -22,7 +22,22 @@ export function CustomerContactEditor({
   notes: string | null;
 }) {
   const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const action = updateCustomerContact.bind(null, customerId);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const result = await action(new FormData(e.currentTarget));
+    setBusy(false);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      setEditing(false);
+    }
+  }
 
   if (!editing) {
     return (
@@ -55,7 +70,7 @@ export function CustomerContactEditor({
   }
 
   return (
-    <form action={action} onSubmit={() => setEditing(false)} className="flex flex-col gap-3">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-[160px] flex-1">
           <Label htmlFor="name">Nombre</Label>
@@ -80,13 +95,15 @@ export function CustomerContactEditor({
           placeholder="Ej: prefiere tonos coral, alérgica a fragancias fuertes, siempre pregunta por novedades de skincare..."
         />
       </div>
+      {error && <p className="rounded-md bg-accent/20 px-2 py-1 text-xs text-ink">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm">
-          Guardar
+        <Button type="submit" size="sm" disabled={busy}>
+          {busy ? "Guardando..." : "Guardar"}
         </Button>
         <button
           type="button"
           onClick={() => setEditing(false)}
+          disabled={busy}
           className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs text-ink/60 hover:bg-ink/5 hover:text-ink"
         >
           <X className="h-4 w-4" /> Cancelar

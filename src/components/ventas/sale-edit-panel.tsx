@@ -94,24 +94,35 @@ export function SaleEditPanel({
   products: SellableProduct[];
   categories: { id: string; name: string }[];
   lines: { id: string; name: string; category_id: string }[];
-  action: (formData: FormData) => void | Promise<void>;
+  action: (formData: FormData) => Promise<{ error?: string }>;
 }) {
   const [editing, setEditing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const skipConfirmRef = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pendingFormData = useRef<FormData | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  async function doSubmit(formData: FormData) {
+    setBusy(true);
+    setError(null);
+    const result = await action(formData);
+    setBusy(false);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      setEditing(false);
+    }
+  }
 
   // El stock ya se descontó al crear esta venta (a diferencia de un
   // pedido pendiente) — bajar una cantidad o quitar un producto le
   // devuelve stock a la vendedora, así que amerita el mismo aviso previo
   // que ya usamos al editar un pedido.
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    if (skipConfirmRef.current) {
-      skipConfirmRef.current = false;
-      return;
-    }
-
+    e.preventDefault();
     const formData = new FormData(e.currentTarget);
+
     let nextItems: { variant_id: string; quantity: number }[] = [];
     try {
       nextItems = JSON.parse(String(formData.get("items") ?? "[]"));
@@ -134,15 +145,17 @@ export function SaleEditPanel({
     );
 
     if (removedOrReduced) {
-      e.preventDefault();
+      pendingFormData.current = formData;
       setConfirmOpen(true);
+      return;
     }
+
+    void doSubmit(formData);
   }
 
   function confirmAndSubmit() {
     setConfirmOpen(false);
-    skipConfirmRef.current = true;
-    formRef.current?.requestSubmit();
+    if (pendingFormData.current) void doSubmit(pendingFormData.current);
   }
 
   if (!editing) {
@@ -168,7 +181,7 @@ export function SaleEditPanel({
   return (
     <>
       <Card className="mt-6">
-        <form ref={formRef} action={action} onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
           <PaymentMethodField defaultMethod={paymentMethod} defaultBankNote={bankNote} />
           <SaleLineItems
             products={products}
@@ -176,11 +189,15 @@ export function SaleEditPanel({
             lines={lines}
             defaultItems={defaultItems}
           />
+          {error && <p className="rounded-md bg-accent/20 px-2 py-1 text-xs text-ink">{error}</p>}
           <div className="flex gap-2">
-            <Button type="submit">Guardar cambios</Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Guardando..." : "Guardar cambios"}
+            </Button>
             <button
               type="button"
               onClick={() => setEditing(false)}
+              disabled={busy}
               className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm text-ink/60 hover:bg-ink/5 hover:text-ink"
             >
               <X className="h-4 w-4" /> Cancelar

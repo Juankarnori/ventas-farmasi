@@ -20,13 +20,9 @@ export function FollowUpRuleRow({ rule }: { rule: FollowUpRule }) {
   async function toggleActive() {
     setBusy(true);
     setError(null);
-    try {
-      await setFollowUpRuleActive(rule.id, !rule.active);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo actualizar. Intentá de nuevo.");
-    } finally {
-      setBusy(false);
-    }
+    const result = await setFollowUpRuleActive(rule.id, !rule.active);
+    setBusy(false);
+    if (result?.error) setError(result.error);
   }
 
   if (editing) {
@@ -34,8 +30,9 @@ export function FollowUpRuleRow({ rule }: { rule: FollowUpRule }) {
       <div className="rounded-xl border border-gold/20 bg-surface p-4">
         <FollowUpRuleForm
           action={async (formData) => {
-            await updateFollowUpRule(rule.id, formData);
-            setEditing(false);
+            const result = await updateFollowUpRule(rule.id, formData);
+            if (!result.error) setEditing(false);
+            return result;
           }}
           defaults={{
             name: rule.name,

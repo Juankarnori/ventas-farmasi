@@ -30,13 +30,12 @@ export function FollowUpToday({ tasks: initialTasks }: { tasks: FollowUpTaskData
   async function resolve(taskId: string, status: "hecho" | "omitido") {
     setBusyId(taskId);
     setError(null);
-    try {
-      await completeFollowUpTask(taskId, status);
+    const result = await completeFollowUpTask(taskId, status);
+    setBusyId(null);
+    if (result?.error) {
+      setError(result.error);
+    } else {
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo actualizar la tarea. Intentá de nuevo.");
-    } finally {
-      setBusyId(null);
     }
   }
 

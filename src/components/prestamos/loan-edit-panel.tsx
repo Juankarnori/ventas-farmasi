@@ -48,11 +48,13 @@ export function LoanEditPanel({
   products: LoanableProduct[];
   categories: { id: string; name: string }[];
   lines: { id: string; name: string; category_id: string }[];
-  action: (formData: FormData) => void | Promise<void>;
+  action: (formData: FormData) => Promise<{ error?: string }>;
 }) {
   const [editing, setEditing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const skipConfirmRef = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pendingFormData = useRef<FormData | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
@@ -96,16 +98,29 @@ export function LoanEditPanel({
     setVariantId(productById.get(id)?.variants[0]?.id ?? "");
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    if (skipConfirmRef.current) {
-      skipConfirmRef.current = false;
-      // Se confirmó desde el diálogo — la submission de verdad sigue su
-      // curso acá, así que recién ahora se vuelve a modo lectura (ver
-      // comentario más abajo sobre por qué esto importa).
+  // La Server Action devuelve { error? } en vez de tirar una excepción —
+  // en producción, Next.js oculta el mensaje real de cualquier throw no
+  // atrapado en una Server Action, así que el único jeito confiable de
+  // mostrar el motivo real es que nunca se lance como excepción.
+  async function doSubmit(formData: FormData) {
+    setBusy(true);
+    setError(null);
+    const result = await action(formData);
+    setBusy(false);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      // Volver a modo lectura acá (recién cuando el guardado de verdad
+      // terminó bien) le da a esta pantalla una señal clara de "esto se
+      // guardó" — antes el formulario se quedaba tal cual con lo que la
+      // usuaria había tipeado, así que un guardado fallido o exitoso se
+      // veían exactamente igual en pantalla.
       setEditing(false);
-      return;
     }
+  }
 
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const nextVariantId = String(formData.get("variant_id") ?? "");
     const nextQuantity = Number(formData.get("quantity"));
@@ -116,24 +131,17 @@ export function LoanEditPanel({
     const changesStock = nextVariantId !== loan.variantId || nextQuantity < loan.quantity;
 
     if (changesStock) {
-      e.preventDefault();
+      pendingFormData.current = formData;
       setConfirmOpen(true);
       return;
     }
 
-    // Nada que confirmar: la submission sigue de largo. Volver a modo
-    // lectura ACÁ (antes ni pasaba) es lo que le da a esta pantalla una
-    // señal clara de "esto se guardó" — sin esto, el formulario se
-    // quedaba tal cual estaba con los valores que la usuaria ya había
-    // tipeado, así que un guardado fallido o exitoso se veían exactamente
-    // igual en pantalla.
-    setEditing(false);
+    void doSubmit(formData);
   }
 
   function confirmAndSubmit() {
     setConfirmOpen(false);
-    skipConfirmRef.current = true;
-    formRef.current?.requestSubmit();
+    if (pendingFormData.current) void doSubmit(pendingFormData.current);
   }
 
   if (!editing) {
@@ -169,7 +177,7 @@ export function LoanEditPanel({
   return (
     <>
       <Card className="mt-6">
-        <form ref={formRef} action={action} onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
           <CategoryLineFilter
             categories={categories}
             lines={lines}
@@ -246,11 +254,16 @@ export function LoanEditPanel({
             <Textarea id="note" name="note" rows={2} defaultValue={loan.note ?? ""} />
           </div>
 
+          {error && <p className="rounded-md bg-accent/20 px-2 py-1 text-xs text-ink">{error}</p>}
+
           <div className="flex gap-2">
-            <Button type="submit">Guardar cambios</Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Guardando..." : "Guardar cambios"}
+            </Button>
             <button
               type="button"
               onClick={() => setEditing(false)}
+              disabled={busy}
               className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm text-ink/60 hover:bg-ink/5 hover:text-ink"
             >
               <X className="h-4 w-4" /> Cancelar
@@ -298,10 +311,25 @@ export function LoanSettlementEditor({
   settlementAmount: number | null;
   settlementBankNote: string | null;
   suggestedAmount: number;
-  action: (formData: FormData) => void | Promise<void>;
+  action: (formData: FormData) => Promise<{ error?: string }>;
 }) {
   const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [method, setMethod] = useState(settlementMethod ?? "efectivo");
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const result = await action(new FormData(e.currentTarget));
+    setBusy(false);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      setEditing(false);
+    }
+  }
 
   const METHOD_LABEL: Record<string, string> = {
     efectivo: "💵 Efectivo",
@@ -338,60 +366,63 @@ export function LoanSettlementEditor({
 
   return (
     <Card className="mt-6">
-      <form
-        action={action}
-        onSubmit={() => setEditing(false)}
-        id={`loan-settlement-${loanId}`}
-        className="flex flex-wrap items-end gap-3"
-      >
-        <div className="w-32">
-          <Label htmlFor="settlement_amount">Monto pagado</Label>
-          <Input
-            id="settlement_amount"
-            name="settlement_amount"
-            type="number"
-            min={0}
-            step="0.01"
-            defaultValue={settlementAmount ?? suggestedAmount}
-            required
-          />
-        </div>
-        <div className="w-56">
-          <Label htmlFor="settlement_method">Cómo se pagó/devolvió</Label>
-          <Select
-            id="settlement_method"
-            name="settlement_method"
-            value={method}
-            onChange={(e) => setMethod(e.target.value as LoanSettlementMethod)}
-          >
-            <option value="efectivo">Efectivo</option>
-            <option value="transferencia">Transferencia bancaria</option>
-            <option value="producto">Devuelto en producto</option>
-          </Select>
-        </div>
-        {method === "transferencia" && (
-          <div className="min-w-[180px] flex-1">
-            <Label htmlFor="settlement_bank_note">Banco (opcional)</Label>
+      <div className="flex flex-col gap-2">
+        <form
+          onSubmit={handleSubmit}
+          id={`loan-settlement-${loanId}`}
+          className="flex flex-wrap items-end gap-3"
+        >
+          <div className="w-32">
+            <Label htmlFor="settlement_amount">Monto pagado</Label>
             <Input
-              id="settlement_bank_note"
-              name="settlement_bank_note"
-              placeholder="Ej: Banco Pichincha"
-              defaultValue={settlementBankNote ?? ""}
+              id="settlement_amount"
+              name="settlement_amount"
+              type="number"
+              min={0}
+              step="0.01"
+              defaultValue={settlementAmount ?? suggestedAmount}
+              required
             />
           </div>
-        )}
-        <Button type="submit" size="sm">
-          Guardar
-        </Button>
-        <button
-          type="button"
-          onClick={() => setEditing(false)}
-          aria-label="Cancelar edición"
-          className="rounded-full p-2 text-ink/40 hover:bg-ink/5"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </form>
+          <div className="w-56">
+            <Label htmlFor="settlement_method">Cómo se pagó/devolvió</Label>
+            <Select
+              id="settlement_method"
+              name="settlement_method"
+              value={method}
+              onChange={(e) => setMethod(e.target.value as LoanSettlementMethod)}
+            >
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia bancaria</option>
+              <option value="producto">Devuelto en producto</option>
+            </Select>
+          </div>
+          {method === "transferencia" && (
+            <div className="min-w-[180px] flex-1">
+              <Label htmlFor="settlement_bank_note">Banco (opcional)</Label>
+              <Input
+                id="settlement_bank_note"
+                name="settlement_bank_note"
+                placeholder="Ej: Banco Pichincha"
+                defaultValue={settlementBankNote ?? ""}
+              />
+            </div>
+          )}
+          <Button type="submit" size="sm" disabled={busy}>
+            {busy ? "Guardando..." : "Guardar"}
+          </Button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            disabled={busy}
+            aria-label="Cancelar edición"
+            className="rounded-full p-2 text-ink/40 hover:bg-ink/5"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </form>
+        {error && <p className="rounded-md bg-accent/20 px-2 py-1 text-xs text-ink">{error}</p>}
+      </div>
     </Card>
   );
 }

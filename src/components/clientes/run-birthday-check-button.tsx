@@ -16,13 +16,9 @@ export function RunBirthdayCheckButton() {
   async function run() {
     setBusy(true);
     setError(null);
-    try {
-      await runBirthdayCheckManually();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo revisar. Intentá de nuevo.");
-    } finally {
-      setBusy(false);
-    }
+    const result = await runBirthdayCheckManually();
+    setBusy(false);
+    if (result?.error) setError(result.error);
   }
 
   return (

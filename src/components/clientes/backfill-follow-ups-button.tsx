@@ -25,25 +25,24 @@ export function BackfillFollowUpsButton({ ruleId }: { ruleId: string }) {
     setStep("confirm");
     setError(null);
     setCount(null);
-    try {
-      const n = await countBackfillFollowUpTasks(ruleId);
-      setCount(n);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo calcular cuántas se generarían.");
+    const result = await countBackfillFollowUpTasks(ruleId);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setCount(result.count ?? 0);
     }
   }
 
   async function confirmApply() {
     setBusy(true);
     setError(null);
-    try {
-      const n = await backfillFollowUpTasks(ruleId);
-      setCreated(n);
+    const result = await backfillFollowUpTasks(ruleId);
+    setBusy(false);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setCreated(result.created ?? 0);
       setStep("done");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo aplicar la regla. Intentá de nuevo.");
-    } finally {
-      setBusy(false);
     }
   }
 

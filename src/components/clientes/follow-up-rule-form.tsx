@@ -22,7 +22,7 @@ export function FollowUpRuleForm({
   submitLabel = "Crear regla",
   onCancel,
 }: {
-  action: (formData: FormData) => void | Promise<void>;
+  action: (formData: FormData) => Promise<{ error?: string }>;
   defaults?: FollowUpRuleDefaults;
   submitLabel?: string;
   onCancel?: () => void;
@@ -37,17 +37,18 @@ export function FollowUpRuleForm({
   // Action (ej. validación de parseRuleForm) se propagara sin control y
   // crasheara toda la página con la pantalla genérica de Next.js — mismo
   // patrón ya corregido en StockStepper/AdjustStockDialog. Acá se
-  // intercepta el submit a mano para poder mostrar el error inline.
+  // intercepta el submit a mano y la acción devuelve { error? } en vez de
+  // tirarlo, así el mensaje real le llega al cliente incluso en
+  // producción (donde Next.js oculta el mensaje de cualquier throw no
+  // atrapado en una Server Action).
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    try {
-      await action(new FormData(e.currentTarget));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar. Intentá de nuevo.");
-    } finally {
-      setBusy(false);
+    const result = await action(new FormData(e.currentTarget));
+    setBusy(false);
+    if (result?.error) {
+      setError(result.error);
     }
   }
 

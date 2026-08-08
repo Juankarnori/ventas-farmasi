@@ -21,8 +21,9 @@ export function NewFollowUpRule() {
     <div className="rounded-xl border border-gold/20 bg-surface p-4">
       <FollowUpRuleForm
         action={async (formData) => {
-          await createFollowUpRule(formData);
-          setOpen(false);
+          const result = await createFollowUpRule(formData);
+          if (!result.error) setOpen(false);
+          return result;
         }}
         submitLabel="Crear regla"
         onCancel={() => setOpen(false)}

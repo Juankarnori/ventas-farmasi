@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ActionButton } from "@/components/ui/action-button";
 import { formatDate } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/currency";
 import { markLoanReturned, markLoanSold } from "@/app/(app)/prestamos/actions";
@@ -64,22 +67,22 @@ export function LoanList({ loans }: { loans: LoanRow[] }) {
               <div className="flex flex-wrap items-center gap-2">
                 {loan.status === "pendiente" && (
                   <>
-                    <form action={markLoanReturned.bind(null, loan.id)}>
-                      <button
-                        type="submit"
-                        className="rounded-full px-3 py-1.5 text-xs text-primary hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
-                      >
-                        Marcar devuelto
-                      </button>
-                    </form>
-                    <form action={markLoanSold.bind(null, loan.id)}>
-                      <button
-                        type="submit"
-                        className="rounded-full px-3 py-1.5 text-xs text-ink/60 hover:bg-accent/20 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
-                      >
-                        Marcar vendido
-                      </button>
-                    </form>
+                    <ActionButton
+                      action={markLoanReturned.bind(null, loan.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="px-3 py-1.5 text-xs text-primary hover:bg-primary/10"
+                    >
+                      Marcar devuelto
+                    </ActionButton>
+                    <ActionButton
+                      action={markLoanSold.bind(null, loan.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="px-3 py-1.5 text-xs text-ink/60 hover:bg-accent/20 hover:text-ink"
+                    >
+                      Marcar vendido
+                    </ActionButton>
                   </>
                 )}
                 {loan.status === "vendido" && (

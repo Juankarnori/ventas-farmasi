@@ -10,15 +10,35 @@ import { registerPayment } from "@/app/(app)/ventas/actions";
 
 export function RegisterPaymentDialog({ saleId }: { saleId: string }) {
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const action = registerPayment.bind(null, saleId);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const result = await action(new FormData(e.currentTarget));
+    setBusy(false);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      setOpen(false);
+    }
+  }
+
+  function close() {
+    setOpen(false);
+    setError(null);
+  }
 
   return (
     <>
       <Button type="button" onClick={() => setOpen(true)}>
         <HandCoins className="h-4 w-4" /> Registrar abono
       </Button>
-      <Dialog open={open} onClose={() => setOpen(false)} title="Registrar abono">
-        <form action={action} onSubmit={() => setOpen(false)} className="flex flex-col gap-4">
+      <Dialog open={open} onClose={close} title="Registrar abono">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <Label htmlFor="amount">Monto</Label>
             <Input id="amount" name="amount" type="number" min={0.01} step="0.01" required />
@@ -35,7 +55,10 @@ export function RegisterPaymentDialog({ saleId }: { saleId: string }) {
             <Label htmlFor="note">Nota (opcional)</Label>
             <Textarea id="note" name="note" rows={2} />
           </div>
-          <Button type="submit">Guardar abono</Button>
+          {error && <p className="rounded-md bg-accent/20 px-2 py-1 text-xs text-ink">{error}</p>}
+          <Button type="submit" disabled={busy}>
+            {busy ? "Guardando..." : "Guardar abono"}
+          </Button>
         </form>
       </Dialog>
     </>

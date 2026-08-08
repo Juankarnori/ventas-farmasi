@@ -70,117 +70,140 @@ export async function createLoan(formData: FormData) {
 // Edición completa (variante/cantidad/valoración) — solo mientras el
 // préstamo sigue 'pendiente' (ver update_loan). Igual que en Ventas, se
 // pasa el id ya bindeado desde la página.
-export async function updateLoan(loanId: string, formData: FormData) {
-  await getSessionProfile();
-  const supabase = await createClient();
+//
+// Devuelve { error? } en vez de tirar una excepción: en producción,
+// Next.js oculta el mensaje real de cualquier throw no atrapado en una
+// Server Action y lo reemplaza por un texto genérico + digest — hace
+// falta que nunca se lance como excepción para que el mensaje real le
+// llegue al cliente. Todo el cuerpo queda envuelto en su propio
+// try/catch en vez de convertir cada `throw` suelto uno por uno.
+export async function updateLoan(loanId: string, formData: FormData): Promise<{ error?: string }> {
+  try {
+    await getSessionProfile();
+    const supabase = await createClient();
 
-  const variantId = String(formData.get("variant_id") ?? "");
-  const quantity = Number(formData.get("quantity"));
-  const note = String(formData.get("note") ?? "").trim() || null;
-  const valuationType = readValuationType(formData);
-  const customPrice = readCustomPrice(formData, valuationType);
+    const variantId = String(formData.get("variant_id") ?? "");
+    const quantity = Number(formData.get("quantity"));
+    const note = String(formData.get("note") ?? "").trim() || null;
+    const valuationType = readValuationType(formData);
+    const customPrice = readCustomPrice(formData, valuationType);
 
-  if (!variantId) {
-    throw new Error("Elegí un producto");
+    if (!variantId) {
+      throw new Error("Elegí un producto");
+    }
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      throw new Error("La cantidad tiene que ser mayor a 0");
+    }
+
+    const { error } = await supabase.rpc("update_loan", {
+      p_loan_id: loanId,
+      p_variant_id: variantId,
+      p_quantity: quantity,
+      p_valuation_type: valuationType,
+      p_note: note,
+      p_custom_price: customPrice,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    revalidatePath("/prestamos");
+    revalidatePath(`/prestamos/${loanId}`);
+    revalidatePath("/inventario");
+    revalidatePath("/catalogo");
+    revalidatePath("/finanzas");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo guardar el préstamo. Intentá de nuevo." };
   }
-  if (!Number.isFinite(quantity) || quantity <= 0) {
-    throw new Error("La cantidad tiene que ser mayor a 0");
-  }
-
-  const { error } = await supabase.rpc("update_loan", {
-    p_loan_id: loanId,
-    p_variant_id: variantId,
-    p_quantity: quantity,
-    p_valuation_type: valuationType,
-    p_note: note,
-    p_custom_price: customPrice,
-  });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  revalidatePath("/prestamos");
-  revalidatePath(`/prestamos/${loanId}`);
-  revalidatePath("/inventario");
-  revalidatePath("/catalogo");
-  revalidatePath("/finanzas");
 }
 
 // Edición liviana: cómo se pagó/devolvió un préstamo ya resuelto — no
 // toca stock ni cantidades.
-export async function updateLoanSettlement(loanId: string, formData: FormData) {
-  await getSessionProfile();
-  const supabase = await createClient();
+export async function updateLoanSettlement(
+  loanId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
+  try {
+    await getSessionProfile();
+    const supabase = await createClient();
 
-  const raw = String(formData.get("settlement_method") ?? "");
-  if (raw !== "efectivo" && raw !== "transferencia" && raw !== "producto") {
-    throw new Error("Método inválido");
+    const raw = String(formData.get("settlement_method") ?? "");
+    if (raw !== "efectivo" && raw !== "transferencia" && raw !== "producto") {
+      throw new Error("Método inválido");
+    }
+    const settlementMethod: LoanSettlementMethod = raw;
+    const settlementAmount = Number(formData.get("settlement_amount"));
+    const bankNote = String(formData.get("settlement_bank_note") ?? "").trim() || null;
+
+    if (!Number.isFinite(settlementAmount) || settlementAmount < 0) {
+      throw new Error("El monto pagado tiene que ser mayor o igual a 0");
+    }
+
+    const { error } = await supabase.rpc("update_loan_settlement", {
+      p_loan_id: loanId,
+      p_settlement_method: settlementMethod,
+      p_settlement_amount: settlementAmount,
+      p_settlement_bank_note: bankNote,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    revalidatePath("/prestamos");
+    revalidatePath(`/prestamos/${loanId}`);
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo guardar el pago. Intentá de nuevo." };
   }
-  const settlementMethod: LoanSettlementMethod = raw;
-  const settlementAmount = Number(formData.get("settlement_amount"));
-  const bankNote = String(formData.get("settlement_bank_note") ?? "").trim() || null;
-
-  if (!Number.isFinite(settlementAmount) || settlementAmount < 0) {
-    throw new Error("El monto pagado tiene que ser mayor o igual a 0");
-  }
-
-  const { error } = await supabase.rpc("update_loan_settlement", {
-    p_loan_id: loanId,
-    p_settlement_method: settlementMethod,
-    p_settlement_amount: settlementAmount,
-    p_settlement_bank_note: bankNote,
-  });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  revalidatePath("/prestamos");
-  revalidatePath(`/prestamos/${loanId}`);
 }
 
-export async function markLoanReturned(loanId: string) {
+export async function markLoanReturned(loanId: string): Promise<{ error?: string }> {
   await getSessionProfile();
   const supabase = await createClient();
 
   const { error } = await supabase.rpc("mark_loan_returned", { p_loan_id: loanId });
 
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   revalidatePath("/prestamos");
   revalidatePath("/inventario");
   revalidatePath("/catalogo");
+  return {};
 }
 
-export async function markLoanSold(loanId: string) {
+export async function markLoanSold(loanId: string): Promise<{ error?: string }> {
   await getSessionProfile();
   const supabase = await createClient();
 
   const { error } = await supabase.rpc("mark_loan_sold", { p_loan_id: loanId });
 
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   revalidatePath("/prestamos");
   revalidatePath("/finanzas");
+  return {};
 }
 
-export async function settleAllDebts() {
+export async function settleAllDebts(): Promise<{ error?: string }> {
   await getSessionProfile();
   const supabase = await createClient();
 
   const { error } = await supabase.rpc("settle_loan_debts");
 
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   revalidatePath("/prestamos");
   revalidatePath("/finanzas");
+  return {};
 }
 
 export interface BorrowableStockOption {

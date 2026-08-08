@@ -24,27 +24,25 @@ export function DeleteFollowUpRuleButton({
 
   async function confirmDelete() {
     setBusy(true);
-    try {
-      await deleteFollowUpRule(ruleId);
-      setOpen(false);
-    } catch (e) {
+    const result = await deleteFollowUpRule(ruleId);
+    setBusy(false);
+    if (result?.error) {
       // No es un error inesperado: es exactamente la explicación de
       // delete_follow_up_rule ("ya generó N tareas...") — se muestra tal
-      // cual en vez de un mensaje genérico.
-      setBlockedMessage(e instanceof Error ? e.message : "No se pudo eliminar. Intentá de nuevo.");
-    } finally {
-      setBusy(false);
+      // cual en vez de un mensaje genérico. Llega acá como valor de
+      // retorno, no como excepción — un throw se hubiera mostrado
+      // redactado por Next.js en producción.
+      setBlockedMessage(result.error);
+    } else {
+      setOpen(false);
     }
   }
 
   async function deactivateInstead() {
     setBusy(true);
-    try {
-      await setFollowUpRuleActive(ruleId, false);
-      setOpen(false);
-    } finally {
-      setBusy(false);
-    }
+    await setFollowUpRuleActive(ruleId, false);
+    setBusy(false);
+    setOpen(false);
   }
 
   function close() {

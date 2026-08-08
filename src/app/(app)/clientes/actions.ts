@@ -84,10 +84,15 @@ export async function createCustomer(formData: FormData) {
   redirect(`/clientes/${data.id}`);
 }
 
-export async function updateCustomerContact(customerId: string, formData: FormData) {
-  await getSessionProfile();
-  const supabase = await createClient();
-
+// Devuelve { error? } en vez de tirar una excepción: en producción,
+// Next.js oculta el mensaje real de cualquier throw no atrapado en una
+// Server Action y lo reemplaza por un texto genérico + digest — hace
+// falta que nunca se lance como excepción para que el mensaje real le
+// llegue al cliente.
+export async function updateCustomerContact(
+  customerId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
   const parsed = customerSchema.safeParse({
     name: formData.get("name"),
     phone: formData.get("phone"),
@@ -96,8 +101,11 @@ export async function updateCustomerContact(customerId: string, formData: FormDa
   });
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Datos inválidos");
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
+
+  await getSessionProfile();
+  const supabase = await createClient();
 
   const { error } = await supabase
     .from("customers")
@@ -111,11 +119,12 @@ export async function updateCustomerContact(customerId: string, formData: FormDa
     .eq("id", customerId);
 
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   revalidatePath(`/clientes/${customerId}`);
   revalidatePath("/clientes");
+  return {};
 }
 
 // Borra la clienta si no tiene nada que perder (sin ventas ni
@@ -123,14 +132,16 @@ export async function updateCustomerContact(customerId: string, formData: FormDa
 // 0027_loan_valuation_edit_and_more.sql. Se llama directamente (no como
 // form action) para poder mostrar un mensaje distinto según qué pasó en
 // vez de un simple redirect ciego.
-export async function deleteCustomer(customerId: string): Promise<{ result: "deleted" | "archived" }> {
+export async function deleteCustomer(
+  customerId: string,
+): Promise<{ result?: "deleted" | "archived"; error?: string }> {
   await getSessionProfile();
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("delete_customer", { p_customer_id: customerId });
 
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   revalidatePath("/clientes");
@@ -141,7 +152,10 @@ export async function deleteCustomer(customerId: string): Promise<{ result: "del
 
 // Resuelve una tarea de "Hoy toca contactar": 'hecho' tras escribirle de
 // verdad, 'omitido' si esta vez no correspondía.
-export async function completeFollowUpTask(taskId: string, status: "hecho" | "omitido") {
+export async function completeFollowUpTask(
+  taskId: string,
+  status: "hecho" | "omitido",
+): Promise<{ error?: string }> {
   await getSessionProfile();
   const supabase = await createClient();
 
@@ -151,8 +165,9 @@ export async function completeFollowUpTask(taskId: string, status: "hecho" | "om
   });
 
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   revalidatePath("/clientes");
+  return {};
 }

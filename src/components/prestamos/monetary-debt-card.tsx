@@ -1,5 +1,7 @@
+"use client";
+
 import { Wallet } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/ui/action-button";
 import { formatCurrency } from "@/lib/utils/currency";
 import { computeNetDebts, type DebtEntry } from "@/lib/utils/loan-debt";
 import { settleAllDebts } from "@/app/(app)/prestamos/actions";
@@ -41,11 +43,9 @@ export function MonetaryDebtCard({ debts }: { debts: DebtEntry[] }) {
             reutiliza settle_loan_debts tal cual (liquida TODAS las deudas
             'vendido' pendientes de una vez, no hay liquidación parcial por
             par). */}
-        <form action={settleAllDebts}>
-          <Button type="submit" size="sm" variant="outline">
-            Marcar todo como liquidado
-          </Button>
-        </form>
+        <ActionButton action={settleAllDebts} size="sm" variant="outline">
+          Marcar todo como liquidado
+        </ActionButton>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {lines.map((line) => (
