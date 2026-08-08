@@ -80,6 +80,44 @@ export async function setFollowUpRuleActive(ruleId: string, active: boolean) {
   revalidatePath("/clientes/reglas");
 }
 
+// Cuántas tareas generaría "Aplicar a ventas anteriores" para esta
+// regla — se llama directamente (no como form action) para mostrar el
+// número en el diálogo de confirmación antes de tocar nada.
+export async function countBackfillFollowUpTasks(ruleId: string): Promise<number> {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("count_backfill_follow_up_tasks", { p_rule_id: ruleId });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? 0;
+}
+
+// Genera tareas de seguimiento para ventas que ya existían antes de que
+// esta regla se creara/activara — no duplica si se aplica más de una vez
+// (ver backfill_follow_up_tasks_for_rule). Devuelve cuántas se crearon
+// para mostrar un mensaje de confirmación.
+export async function backfillFollowUpTasks(ruleId: string): Promise<number> {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("backfill_follow_up_tasks_for_rule", { p_rule_id: ruleId });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/clientes");
+  revalidatePath("/clientes/reglas");
+  revalidatePath("/clientes/calendario");
+  revalidatePath("/");
+
+  return data ?? 0;
+}
+
 // Dispara a mano la revisión de cumpleaños (la misma lógica que corre
 // sola todos los días por el cron de Vercel) — para probar una regla de
 // tipo 'cumpleanos' sin tener que esperar al día siguiente.
@@ -95,4 +133,6 @@ export async function runBirthdayCheckManually() {
 
   revalidatePath("/clientes");
   revalidatePath("/clientes/reglas");
+  revalidatePath("/clientes/calendario");
+  revalidatePath("/");
 }

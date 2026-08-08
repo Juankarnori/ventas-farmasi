@@ -5,6 +5,7 @@ import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FollowUpRuleForm } from "./follow-up-rule-form";
+import { BackfillFollowUpsButton } from "./backfill-follow-ups-button";
 import { updateFollowUpRule, setFollowUpRuleActive } from "@/app/(app)/clientes/reglas/actions";
 import type { Database } from "@/lib/types/database.types";
 
@@ -77,9 +78,15 @@ export function FollowUpRuleRow({ rule }: { rule: FollowUpRule }) {
 
       {error && <p className="rounded-md bg-accent/20 px-2 py-1 text-xs text-ink">{error}</p>}
 
-      <Button type="button" size="sm" variant="outline" className="w-fit" disabled={busy} onClick={toggleActive}>
-        {rule.active ? "Desactivar" : "Activar"}
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" size="sm" variant="outline" className="w-fit" disabled={busy} onClick={toggleActive}>
+          {rule.active ? "Desactivar" : "Activar"}
+        </Button>
+        {/* Cumpleaños ya se recalcula solo todos los días vía el cron —
+            este botón solo tiene sentido para reglas de después de la
+            venta, que dependen de ventas puntuales ya registradas. */}
+        {rule.trigger_type === "despues_de_venta" && <BackfillFollowUpsButton ruleId={rule.id} />}
+      </div>
     </div>
   );
 }

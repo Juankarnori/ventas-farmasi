@@ -613,6 +613,14 @@ export interface Database {
         Args: Record<string, never>;
         Returns: { sale_id: string }[];
       };
+      count_backfill_follow_up_tasks: {
+        Args: { p_rule_id: string };
+        Returns: number;
+      };
+      backfill_follow_up_tasks_for_rule: {
+        Args: { p_rule_id: string };
+        Returns: number;
+      };
       get_customer_apartados: {
         Args: { p_customer_id: string };
         Returns: {
