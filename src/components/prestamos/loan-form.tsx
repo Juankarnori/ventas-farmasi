@@ -5,6 +5,7 @@ import { Label, Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
+import { formatCurrency } from "@/lib/utils/currency";
 import type { LoanValuationType } from "@/lib/types/database.types";
 
 export interface LoanableProduct {
@@ -51,6 +52,10 @@ export function LoanForm({
   const [productId, setProductId] = useState(() => products[0]?.id ?? "");
   const [variantId, setVariantId] = useState(products[0]?.variants[0]?.id ?? "");
   const [valuationType, setValuationType] = useState<LoanValuationType>("costo");
+  const [quantity, setQuantity] = useState(1);
+  const [customPrice, setCustomPrice] = useState("");
+  const customPriceNumber = Number(customPrice);
+  const hasValidCustomPrice = customPrice !== "" && Number.isFinite(customPriceNumber) && customPriceNumber > 0;
 
   const selectedProduct = productById.get(productId);
 
@@ -125,7 +130,15 @@ export function LoanForm({
 
       <div className="w-32">
         <Label htmlFor="quantity">Cantidad</Label>
-        <Input id="quantity" name="quantity" type="number" min={1} defaultValue={1} required />
+        <Input
+          id="quantity"
+          name="quantity"
+          type="number"
+          min={1}
+          value={quantity}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+          required
+        />
       </div>
 
       <div>
@@ -149,9 +162,23 @@ export function LoanForm({
       </div>
 
       {valuationType === "promocion" && (
-        <div className="w-40">
+        <div className="w-full max-w-xs">
           <Label htmlFor="custom_price">Precio de promoción (por unidad)</Label>
-          <Input id="custom_price" name="custom_price" type="number" min={0.01} step="0.01" required />
+          <Input
+            id="custom_price"
+            name="custom_price"
+            type="number"
+            min={0.01}
+            step="0.01"
+            value={customPrice}
+            onChange={(e) => setCustomPrice(e.target.value)}
+            required
+          />
+          {hasValidCustomPrice && (
+            <p className="mt-1 text-xs text-ink/60">
+              Total: {formatCurrency(customPriceNumber * quantity)} ({quantity} × {formatCurrency(customPriceNumber)})
+            </p>
+          )}
         </div>
       )}
 

@@ -17,17 +17,23 @@ export default async function UsoPersonalPage({
   const profile = await getSessionProfile();
   const supabase = await createClient();
 
-  const [{ data: products }, { data: variants }, { data: myStock }, { data: profiles }] = await Promise.all([
-    supabase.from("products").select("id, name").order("name", { ascending: true }),
-    supabase
-      .from("product_variants")
-      .select("id, product_id, color_name")
-      .order("color_name", { ascending: true }),
-    // Solo se puede registrar uso personal de lo que una tiene en su
-    // propio stock — mismo criterio que Ventas.
-    supabase.from("variant_stock").select("variant_id, stock").eq("profile_id", profile.id).gt("stock", 0),
-    supabase.from("profiles").select("id, display_name"),
-  ]);
+  const [{ data: products }, { data: variants }, { data: myStock }, { data: profiles }, { data: categories }, { data: lines }] =
+    await Promise.all([
+      supabase
+        .from("products")
+        .select("id, name, category_id, line_id")
+        .order("name", { ascending: true }),
+      supabase
+        .from("product_variants")
+        .select("id, product_id, color_name")
+        .order("color_name", { ascending: true }),
+      // Solo se puede registrar uso personal de lo que una tiene en su
+      // propio stock — mismo criterio que Ventas.
+      supabase.from("variant_stock").select("variant_id, stock").eq("profile_id", profile.id).gt("stock", 0),
+      supabase.from("profiles").select("id, display_name"),
+      supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),
+      supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),
+    ]);
 
   const myStockByVariant = new Map((myStock ?? []).map((s) => [s.variant_id, s.stock]));
   const variantsByProduct = new Map<string, typeof variants>();
@@ -42,6 +48,8 @@ export default async function UsoPersonalPage({
     .map((p) => ({
       id: p.id,
       name: p.name,
+      category_id: p.category_id,
+      line_id: p.line_id,
       variants: (variantsByProduct.get(p.id) ?? []).map((v) => ({
         id: v.id,
         color_name: v.color_name,
@@ -101,7 +109,12 @@ export default async function UsoPersonalPage({
         <CardHeader>
           <CardTitle>Registrar uso personal</CardTitle>
         </CardHeader>
-        <PersonalUseForm products={usableProducts} action={registerPersonalUse} />
+        <PersonalUseForm
+          products={usableProducts}
+          categories={categories ?? []}
+          lines={lines ?? []}
+          action={registerPersonalUse}
+        />
       </Card>
 
       <Card className="p-0">

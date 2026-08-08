@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/currency";
 import { WhatsAppButton } from "@/components/shared/whatsapp-button";
@@ -33,14 +34,25 @@ export function CustomerCard({ customer }: { customer: CustomerCardData }) {
 
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium text-ink">{customer.name}</p>
-        {/* Sin z-index/relative a propósito, a diferencia del botón de
-            WhatsApp: este badge no es interactivo, no necesita ganarle
-            el click al <Link> de fondo. */}
-        {!!customer.pendingBalance && (
-          <Badge variant="gold" className="shrink-0">
-            Saldo pendiente: {formatCurrency(customer.pendingBalance)}
-          </Badge>
-        )}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {/* Sin z-index/relative a propósito, a diferencia del botón de
+              WhatsApp/editar: este badge no es interactivo, no necesita
+              ganarle el click al <Link> de fondo. */}
+          {!!customer.pendingBalance && (
+            <Badge variant="gold">Saldo pendiente: {formatCurrency(customer.pendingBalance)}</Badge>
+          )}
+          {/* Mismo motivo que WhatsAppButton: necesita su propio <Link>
+              con más z-index para interceptar el click antes que el de
+              fondo — así se puede editar sin tener que entrar primero a
+              la ficha. */}
+          <Link
+            href={`/clientes/${customer.id}?edit=1`}
+            aria-label={`Editar ${customer.name}`}
+            className="relative z-10 rounded-full p-1 text-ink/40 hover:bg-primary/10 hover:text-primary"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
       <div className="mt-0.5 flex items-center gap-1">
         <p className="text-xs text-ink/50">{customer.phone ?? "Sin teléfono"}</p>

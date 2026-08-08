@@ -4,27 +4,63 @@ import { useMemo, useState } from "react";
 import { Label, Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { CategoryLineFilter } from "@/components/shared/category-line-filter";
 import { todayISO } from "@/lib/utils/date";
 
 export interface PersonalUseProduct {
   id: string;
   name: string;
+  category_id: string | null;
+  line_id: string | null;
   variants: { id: string; color_name: string; stock: number }[];
 }
 
 export function PersonalUseForm({
   products,
+  categories,
+  lines,
   action,
 }: {
   products: PersonalUseProduct[];
+  categories: { id: string; name: string }[];
+  lines: { id: string; name: string; category_id: string }[];
   action: (formData: FormData) => void | Promise<void>;
 }) {
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+
+  const [filterCategoryId, setFilterCategoryId] = useState("");
+  const [filterLineId, setFilterLineId] = useState("");
+
+  const filteredProducts = useMemo(
+    () =>
+      products.filter((p) => {
+        if (filterCategoryId && p.category_id !== filterCategoryId) return false;
+        if (filterLineId && p.line_id !== filterLineId) return false;
+        return true;
+      }),
+    [products, filterCategoryId, filterLineId],
+  );
+
+  function onFilterCategoryChange(id: string) {
+    setFilterCategoryId(id);
+    setFilterLineId("");
+  }
+
   const [productId, setProductId] = useState(products[0]?.id ?? "");
   const [variantId, setVariantId] = useState(products[0]?.variants[0]?.id ?? "");
 
   const selectedProduct = productById.get(productId);
   const selectedVariant = selectedProduct?.variants.find((v) => v.id === variantId);
+
+  // Igual que en Catálogo/Pedidos/Ventas/Préstamos: las opciones del
+  // select son la lista filtrada, más el producto ya elegido si el
+  // filtro cambió después y ya no lo incluye.
+  const productOptions =
+    filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId)
+      ? filteredProducts
+      : selectedProduct
+        ? [selectedProduct, ...filteredProducts]
+        : filteredProducts;
 
   function onProductChange(id: string) {
     setProductId(id);
@@ -37,11 +73,20 @@ export function PersonalUseForm({
 
   return (
     <form action={action} className="flex flex-col gap-4">
+      <CategoryLineFilter
+        categories={categories}
+        lines={lines}
+        categoryId={filterCategoryId}
+        lineId={filterLineId}
+        onCategoryChange={onFilterCategoryChange}
+        onLineChange={setFilterLineId}
+      />
+
       <div className="flex flex-wrap gap-3">
         <div className="min-w-[180px] flex-1">
           <Label htmlFor="pu_product_id">Producto</Label>
           <Select id="pu_product_id" value={productId} onChange={(e) => onProductChange(e.target.value)}>
-            {products.map((p) => (
+            {productOptions.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>

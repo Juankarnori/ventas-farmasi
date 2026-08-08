@@ -84,6 +84,10 @@ export function LoanEditPanel({
   const [productId, setProductId] = useState(() => productOfVariant?.id ?? products[0]?.id ?? "");
   const [variantId, setVariantId] = useState(loan.variantId);
   const [valuationType, setValuationType] = useState(loan.valuationType);
+  const [quantity, setQuantity] = useState(loan.quantity);
+  const [customPrice, setCustomPrice] = useState(loan.customPrice != null ? String(loan.customPrice) : "");
+  const customPriceNumber = Number(customPrice);
+  const hasValidCustomPrice = customPrice !== "" && Number.isFinite(customPriceNumber) && customPriceNumber > 0;
   const selectedProduct = productById.get(productId);
 
   const productOptions =
@@ -217,7 +221,15 @@ export function LoanEditPanel({
 
           <div className="w-32">
             <Label htmlFor="quantity">Cantidad</Label>
-            <Input id="quantity" name="quantity" type="number" min={1} defaultValue={loan.quantity} required />
+            <Input
+              id="quantity"
+              name="quantity"
+              type="number"
+              min={1}
+              value={quantity}
+              onChange={(e) => setQuantity(Number(e.target.value))}
+              required
+            />
           </div>
 
           <div>
@@ -235,7 +247,7 @@ export function LoanEditPanel({
           </div>
 
           {valuationType === "promocion" && (
-            <div className="w-40">
+            <div className="w-full max-w-xs">
               <Label htmlFor="custom_price">Precio de promoción (por unidad)</Label>
               <Input
                 id="custom_price"
@@ -243,9 +255,15 @@ export function LoanEditPanel({
                 type="number"
                 min={0.01}
                 step="0.01"
-                defaultValue={loan.customPrice ?? ""}
+                value={customPrice}
+                onChange={(e) => setCustomPrice(e.target.value)}
                 required
               />
+              {hasValidCustomPrice && (
+                <p className="mt-1 text-xs text-ink/60">
+                  Total: {formatCurrency(customPriceNumber * quantity)} ({quantity} × {formatCurrency(customPriceNumber)})
+                </p>
+              )}
             </div>
           )}
 

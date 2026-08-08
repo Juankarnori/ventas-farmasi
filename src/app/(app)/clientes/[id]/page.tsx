@@ -13,10 +13,13 @@ import { SaleHistoryTable, type SaleHistoryRow } from "@/components/shared/sale-
 
 export default async function ClienteDetallePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ edit?: string }>;
 }) {
   const { id } = await params;
+  const { edit } = await searchParams;
   const supabase = await createClient();
 
   const { data: customer } = await supabase.from("customers").select("*").eq("id", id).maybeSingle();
@@ -139,6 +142,7 @@ export default async function ClienteDetallePage({
         phone={customer.phone}
         birthDate={customer.birth_date}
         notes={customer.notes}
+        defaultEditing={edit === "1"}
       />
 
       {/* No se metió adentro de CustomerContactEditor a propósito: ese

@@ -38,22 +38,29 @@ export default async function ApartadosPage() {
     deliveredBySale.set(item.sale_id, current && item.delivered);
   }
 
-  const apartados: ApartadoCardData[] = (sales ?? []).map((s) => {
-    const balance = balanceBySale.get(s.id);
-    return {
-      id: s.id,
-      customerName: s.customer_name ?? "Sin nombre",
-      sellerName: profileById.get(s.seller_profile_id)?.display_name ?? "—",
-      saleDate: s.sale_date,
-      total: s.total_price,
-      paid: balance?.amount_paid ?? 0,
-      balance: balance?.balance ?? s.total_price,
-      status: s.payment_status,
-      allDelivered: deliveredBySale.get(s.id) ?? true,
-      paymentMethod: s.payment_method,
-      bankNote: s.bank_note,
-    };
-  });
+  const apartados: ApartadoCardData[] = (sales ?? [])
+    // Un apartado completado (saldo $0) Y con todo entregado ya terminó su
+    // ciclo de vida acá — de ahí en más se ve como cualquier otra venta
+    // resuelta, solo en el historial de Ventas (que ya incluye
+    // payment_status = 'completado'). Se queda en Apartados mientras le
+    // falte plata, entrega, o esté cancelado.
+    .filter((s) => !(s.payment_status === "completado" && (deliveredBySale.get(s.id) ?? true)))
+    .map((s) => {
+      const balance = balanceBySale.get(s.id);
+      return {
+        id: s.id,
+        customerName: s.customer_name ?? "Sin nombre",
+        sellerName: profileById.get(s.seller_profile_id)?.display_name ?? "—",
+        saleDate: s.sale_date,
+        total: s.total_price,
+        paid: balance?.amount_paid ?? 0,
+        balance: balance?.balance ?? s.total_price,
+        status: s.payment_status,
+        allDelivered: deliveredBySale.get(s.id) ?? true,
+        paymentMethod: s.payment_method,
+        bankNote: s.bank_note,
+      };
+    });
 
   return (
     <div>

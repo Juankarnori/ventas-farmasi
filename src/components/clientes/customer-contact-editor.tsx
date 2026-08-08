@@ -14,14 +14,19 @@ export function CustomerContactEditor({
   phone,
   birthDate,
   notes,
+  defaultEditing = false,
 }: {
   customerId: string;
   name: string;
   phone: string | null;
   birthDate: string | null;
   notes: string | null;
+  // Para el ícono de editar en la tarjeta del listado (?edit=1): abre
+  // directamente en modo edición al entrar, sin el clic extra de "Editar"
+  // acá adentro.
+  defaultEditing?: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(defaultEditing);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const action = updateCustomerContact.bind(null, customerId);
