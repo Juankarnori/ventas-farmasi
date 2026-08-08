@@ -1,11 +1,10 @@
-import { RefreshCw, Bell } from "lucide-react";
+import { Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ClientesTabs } from "@/components/clientes/clientes-tabs";
 import { NewFollowUpRule } from "@/components/clientes/new-follow-up-rule";
 import { FollowUpRuleRow } from "@/components/clientes/follow-up-rule-row";
-import { runBirthdayCheckManually } from "./actions";
+import { RunBirthdayCheckButton } from "@/components/clientes/run-birthday-check-button";
 
 export default async function ReglasDeSeguimientoPage() {
   const supabase = await createClient();
@@ -37,11 +36,7 @@ export default async function ReglasDeSeguimientoPage() {
 
       <div className="flex flex-wrap items-center gap-2">
         <NewFollowUpRule />
-        <form action={runBirthdayCheckManually}>
-          <Button type="submit" size="sm" variant="ghost">
-            <RefreshCw className="h-4 w-4" /> Revisar cumpleaños ahora
-          </Button>
-        </form>
+        <RunBirthdayCheckButton />
       </div>
 
       {(rules ?? []).length === 0 ? (
