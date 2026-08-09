@@ -5,6 +5,7 @@ import { Pencil } from "lucide-react";
 import { Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ActionButton } from "@/components/ui/action-button";
+import { DeleteLoanButton } from "./delete-loan-button";
 import { formatDate } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/currency";
 import { markLoanReturned, markLoanSold } from "@/app/(app)/prestamos/actions";
@@ -106,6 +107,12 @@ export function LoanList({ loans }: { loans: LoanRow[] }) {
                   <Pencil className="h-3.5 w-3.5" />
                   {loan.status === "vendido" ? "Registrar pago" : "Editar"}
                 </Link>
+                <DeleteLoanButton
+                  loanId={loan.id}
+                  status={loan.status}
+                  debtAmount={loan.debtAmount}
+                  debtSettled={loan.debtSettled}
+                />
               </div>
             </Td>
           </Tr>

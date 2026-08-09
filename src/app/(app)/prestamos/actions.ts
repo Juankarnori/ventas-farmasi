@@ -191,6 +191,28 @@ export async function markLoanSold(loanId: string): Promise<{ error?: string }> 
   return {};
 }
 
+// Eliminar un préstamo desde cualquiera de los 3 estados — delete_loan
+// revierte el stock solo si estaba 'pendiente' (ver 0038); si tiene una
+// deuda 'vendido' sin liquidar, la advertencia ya se le mostró a la
+// usuaria del lado del cliente antes de llegar acá (no se bloquea nada
+// acá, es su decisión).
+export async function deleteLoan(loanId: string): Promise<{ error?: string }> {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("delete_loan", { p_loan_id: loanId });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/prestamos");
+  revalidatePath("/inventario");
+  revalidatePath("/catalogo");
+  revalidatePath("/finanzas");
+  return {};
+}
+
 export async function settleAllDebts(): Promise<{ error?: string }> {
   await getSessionProfile();
   const supabase = await createClient();

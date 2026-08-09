@@ -517,6 +517,10 @@ export interface Database {
         Args: { p_loan_id: string };
         Returns: void;
       };
+      delete_loan: {
+        Args: { p_loan_id: string };
+        Returns: void;
+      };
       settle_loan_debts: {
         Args: Record<string, never>;
         Returns: void;
