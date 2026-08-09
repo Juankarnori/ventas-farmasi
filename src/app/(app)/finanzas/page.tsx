@@ -138,13 +138,17 @@ export default async function FinanzasPage({
   // nunca se vendió). Mismo effectiveUsuaria/desde/hasta que el resto de
   // esta página, pero NUNCA se resta de netProfit ni entra en ningún
   // cálculo de ganancia — register_personal_use ni siquiera toca `sales`.
-  let personalUseQuery = supabase.from("personal_use").select("quantity, unit_cost");
+  let personalUseQuery = supabase.from("personal_use").select("quantity, unit_cost, reimbursed_amount");
   if (desde) personalUseQuery = personalUseQuery.gte("used_at", desde);
   if (hasta) personalUseQuery = personalUseQuery.lte("used_at", hasta);
   if (effectiveUsuaria) personalUseQuery = personalUseQuery.eq("profile_id", effectiveUsuaria);
   const { data: personalUseRows } = await personalUseQuery;
+  // Neto: si parte de esto se lo reembolsaron a quien lo registró (ej. una
+  // crema que uso personal registró pero le pagó la mitad su hermana), esa
+  // parte no representa consumo real del negocio — se resta acá, no en el
+  // historial (ahí se sigue mostrando el desglose completo).
   const personalUseValue = (personalUseRows ?? []).reduce(
-    (sum, r) => sum + r.quantity * (r.unit_cost ?? 0),
+    (sum, r) => sum + r.quantity * (r.unit_cost ?? 0) - (r.reimbursed_amount ?? 0),
     0,
   );
 

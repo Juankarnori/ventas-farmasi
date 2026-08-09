@@ -90,6 +90,9 @@ export default async function UsoPersonalPage({
       value: e.quantity * (e.unit_cost ?? 0),
       note: e.note,
       profileName: profileById.get(e.profile_id)?.display_name ?? "—",
+      profileId: e.profile_id,
+      reimbursedAmount: e.reimbursed_amount,
+      reimbursedNote: e.reimbursed_note,
     };
   });
 
@@ -124,7 +127,7 @@ export default async function UsoPersonalPage({
         <div className="px-5 pb-4">
           <PersonalUseFilters profiles={profiles ?? []} />
         </div>
-        <PersonalUseHistory rows={rows} />
+        <PersonalUseHistory rows={rows} currentProfileId={profile.id} isAdmin={profile.is_admin} />
       </Card>
     </div>
   );

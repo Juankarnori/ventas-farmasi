@@ -1,9 +1,17 @@
 import Link from "next/link";
+import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { RegisterPaymentDialog } from "@/components/ventas/register-payment-dialog";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import type { PaymentStatus } from "@/lib/types/database.types";
+
+export interface CustomerApartadoItem {
+  id: string;
+  label: string;
+  quantity: number;
+  delivered: boolean;
+}
 
 export interface CustomerApartadoData {
   id: string;
@@ -12,6 +20,10 @@ export interface CustomerApartadoData {
   paid: number;
   balance: number;
   status: PaymentStatus;
+  // Qué se entregó y qué falta — mismo detalle que ya se ve en la vista
+  // de Apartados de Ventas, para no tener que salir de la ficha a
+  // buscarlo.
+  items: CustomerApartadoItem[];
 }
 
 // No es un <Link> envolviendo toda la fila a propósito: el botón
@@ -53,6 +65,23 @@ export function CustomerApartadoRow({ apartado }: { apartado: CustomerApartadoDa
             </>
           )}
         </p>
+        {apartado.items.length > 0 && (
+          <ul className="mt-2 flex flex-col gap-0.5 text-xs text-ink/70">
+            {apartado.items.map((item) => (
+              <li key={item.id} className="flex items-center gap-1.5">
+                {item.delivered ? (
+                  <Check className="h-3 w-3 shrink-0 text-sage" />
+                ) : (
+                  <span className="h-3 w-3 shrink-0 rounded-full border border-gold/50" />
+                )}
+                <span>
+                  {item.label} ×{item.quantity}
+                  {!item.delivered && <span className="text-ink/50"> — sin entregar</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       {apartado.status === "con_abonos" && <RegisterPaymentDialog saleId={apartado.id} />}
     </div>

@@ -7,7 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/currency";
 import { variantLabel } from "@/lib/utils/variant-label";
 import { CustomerContactEditor } from "@/components/clientes/customer-contact-editor";
-import { CustomerApartadoRow, type CustomerApartadoData } from "@/components/clientes/customer-apartado-row";
+import {
+  CustomerApartadoRow,
+  type CustomerApartadoData,
+  type CustomerApartadoItem,
+} from "@/components/clientes/customer-apartado-row";
 import { DeleteCustomerButton } from "@/components/clientes/delete-customer-button";
 import { SaleHistoryTable, type SaleHistoryRow } from "@/components/shared/sale-history-table";
 
@@ -34,13 +38,16 @@ export default async function ClienteDetallePage({
   // los filtraría a "lo que yo le vendí"), sino una función que trae el
   // historial completo de la clienta a propósito, sin importar quién de
   // las dos hizo cada venta. Ver 0022_privacy_orders_sales.sql.
-  const [{ data: history }, { data: apartados }] = await Promise.all([
+  const [{ data: history }, { data: apartados }, { data: apartadoItems }] = await Promise.all([
     supabase.rpc("get_customer_purchase_history", { p_customer_id: id }),
     // Mismo motivo que el historial: no se puede consultar `sales`
     // directo (RLS lo filtraría a "solo lo que yo le vendí"), así que
     // esto también pasa por una función que trae los apartados de esta
     // clienta completos, sin importar quién de las dos los vendió.
     supabase.rpc("get_customer_apartados", { p_customer_id: id }),
+    // Detalle de entrega por producto de esos apartados — mismo motivo
+    // que arriba, sale_items es privado por RLS desde 0022.
+    supabase.rpc("get_customer_apartado_items", { p_customer_id: id }),
   ]);
 
   const variantIds = [...new Set((history ?? []).map((h) => h.variant_id))];
@@ -78,6 +85,18 @@ export default async function ClienteDetallePage({
     )
     .sort((a, b) => (a.saleDate < b.saleDate ? 1 : -1));
 
+  const itemsBySale = new Map<string, CustomerApartadoItem[]>();
+  for (const item of apartadoItems ?? []) {
+    const list = itemsBySale.get(item.sale_id) ?? [];
+    list.push({
+      id: `${item.sale_id}:${item.variant_id}`,
+      label: labelFor(item),
+      quantity: item.quantity,
+      delivered: item.delivered,
+    });
+    itemsBySale.set(item.sale_id, list);
+  }
+
   const apartadoRows: CustomerApartadoData[] = (apartados ?? []).map((a) => ({
     id: a.sale_id,
     saleDate: a.sale_date,
@@ -85,6 +104,7 @@ export default async function ClienteDetallePage({
     paid: a.amount_paid,
     balance: a.balance,
     status: a.payment_status,
+    items: itemsBySale.get(a.sale_id) ?? [],
   }));
 
   // Suma de TODOS los apartados con saldo pendiente, no de uno solo —

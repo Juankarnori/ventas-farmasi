@@ -389,6 +389,8 @@ export interface Database {
           unit_cost: number | null;
           note: string | null;
           used_at: string;
+          reimbursed_amount: number;
+          reimbursed_note: string | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["personal_use"]["Row"]> & {
@@ -602,7 +604,26 @@ export interface Database {
         Returns: void;
       };
       register_personal_use: {
-        Args: { p_variant_id: string; p_quantity: number; p_note: string | null; p_used_at: string };
+        Args: {
+          p_variant_id: string;
+          p_quantity: number;
+          p_note: string | null;
+          p_used_at: string;
+          p_reimbursed_amount?: number | null;
+          p_reimbursed_note?: string | null;
+        };
+        Returns: void;
+      };
+      update_personal_use: {
+        Args: {
+          p_entry_id: string;
+          p_variant_id: string;
+          p_quantity: number;
+          p_used_at: string;
+          p_note: string | null;
+          p_reimbursed_amount?: number | null;
+          p_reimbursed_note?: string | null;
+        };
         Returns: void;
       };
       list_customer_pending_balances: {
@@ -639,6 +660,17 @@ export interface Database {
       delete_customer: {
         Args: { p_customer_id: string };
         Returns: string;
+      };
+      get_customer_apartado_items: {
+        Args: { p_customer_id: string };
+        Returns: {
+          sale_id: string;
+          product_id: string;
+          variant_id: string;
+          quantity: number;
+          sale_price: number;
+          delivered: boolean;
+        }[];
       };
     };
   };
