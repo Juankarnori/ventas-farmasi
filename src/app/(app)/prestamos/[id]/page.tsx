@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
-import { LoanEditPanel, LoanSettlementEditor, type LoanEditData } from "@/components/prestamos/loan-edit-panel";
+import {
+  LoanEditPanel,
+  LoanSettlementEditor,
+  LoanValuationSummary,
+  type LoanEditData,
+} from "@/components/prestamos/loan-edit-panel";
 import type { LoanableProduct } from "@/components/prestamos/loan-form";
 import { variantLabel } from "@/lib/utils/variant-label";
 import { formatDate } from "@/lib/utils/date";
@@ -33,10 +38,13 @@ export default async function PrestamoDetallePage({
 
   const [{ data: allProducts }, { data: allVariants }, { data: categories }, { data: lines }, { data: profiles }] =
     await Promise.all([
-      supabase.from("products").select("id, name, category_id, line_id").order("name", { ascending: true }),
+      supabase
+        .from("products")
+        .select("id, name, category_id, line_id, cost_price, sale_price")
+        .order("name", { ascending: true }),
       supabase
         .from("product_variants")
-        .select("id, product_id, color_name")
+        .select("id, product_id, color_name, cost_override, price_override")
         .order("color_name", { ascending: true }),
       supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),
       supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),
@@ -53,7 +61,12 @@ export default async function PrestamoDetallePage({
   const products: LoanableProduct[] = (allProducts ?? [])
     .map((p) => ({
       ...p,
-      variants: (variantsByProduct.get(p.id) ?? []).map((v) => ({ id: v.id, color_name: v.color_name })),
+      variants: (variantsByProduct.get(p.id) ?? []).map((v) => ({
+        id: v.id,
+        color_name: v.color_name,
+        cost_override: v.cost_override,
+        price_override: v.price_override,
+      })),
     }))
     .filter((p) => p.variants.length > 0);
 
@@ -78,6 +91,8 @@ export default async function PrestamoDetallePage({
     note: loan.note,
     valuationType: loan.valuation_type,
     customPrice: loan.custom_price,
+    unitCost: loan.unit_cost,
+    unitPrice: loan.unit_price,
   };
 
   const updateAction = updateLoan.bind(null, loan.id);
@@ -110,14 +125,34 @@ export default async function PrestamoDetallePage({
       )}
 
       {loan.status === "devuelto" && (
-        <div className="mt-6 rounded-xl border border-gold/20 bg-panel/30 p-4 text-sm text-ink/70">
-          Este préstamo ya se devolvió — no hay nada que pagar ni editar.
-        </div>
+        <>
+          <div className="mt-6">
+            <LoanValuationSummary
+              valuationType={loan.valuation_type}
+              unitCost={loan.unit_cost}
+              unitPrice={loan.unit_price}
+              customPrice={loan.custom_price}
+              quantity={loan.quantity}
+            />
+          </div>
+          <div className="mt-3 rounded-xl border border-gold/20 bg-panel/30 p-4 text-sm text-ink/70">
+            Este préstamo ya se devolvió — no hay nada que pagar ni editar.
+          </div>
+        </>
       )}
 
       {loan.status === "vendido" && (
         <>
-          <div className="mt-6 rounded-xl border border-gold/20 bg-panel/30 p-4 text-sm text-ink/70">
+          <div className="mt-6">
+            <LoanValuationSummary
+              valuationType={loan.valuation_type}
+              unitCost={loan.unit_cost}
+              unitPrice={loan.unit_price}
+              customPrice={loan.custom_price}
+              quantity={loan.quantity}
+            />
+          </div>
+          <div className="mt-3 rounded-xl border border-gold/20 bg-panel/30 p-4 text-sm text-ink/70">
             {loan.quantity} unidad{loan.quantity === 1 ? "" : "es"} — se vendió en vez de devolverse, así
             que {toName} le debe a {fromName}{" "}
             <span className="font-mono font-semibold text-ink">{formatCurrency(debtAmount)}</span>{" "}

@@ -1,11 +1,28 @@
-// Cuánto vale la deuda de un préstamo "vendido" (no devuelto): al costo
+// Precio unitario de un préstamo según su tipo de valoración: al costo
 // si era para ayudar a completar un pedido/reposición, a precio de venta
 // si era para que la otra lo venda ella misma (ahí quien prestó perdió la
 // ganancia que hubiera hecho), o al precio manual de promoción si el
 // producto se compró a un precio puntual distinto de los dos anteriores
-// (ej. protectores solares en oferta). Una sola función para los lugares
-// que necesitan este número (Préstamos y Finanzas), para que no se pueda
-// calcular distinto en cada uno.
+// (ej. protectores solares en oferta). Única fuente de este cálculo —
+// tanto el valor "en vivo" del formulario (con el costo/precio del
+// catálogo) como el guardado de un préstamo ya creado pasan por acá, para
+// que nunca puedan mostrar números distintos entre sí.
+export function loanUnitValue(params: {
+  valuationType: "costo" | "pvp" | "promocion";
+  unitCost: number;
+  unitPrice: number;
+  customPrice: number | null;
+}): number {
+  if (params.valuationType === "promocion") return params.customPrice ?? 0;
+  if (params.valuationType === "pvp") return params.unitPrice;
+  return params.unitCost;
+}
+
+// Cuánto vale la deuda de un préstamo "vendido" (no devuelto) — o, para
+// cualquier otro estado, cuánto vale el préstamo en sí: precio unitario
+// (ver loanUnitValue) × cantidad. Una sola función para los lugares que
+// necesitan este número (formulario, detalle y listado de Préstamos, y
+// Finanzas), para que no se pueda calcular distinto en cada uno.
 export function loanDebtAmount(loan: {
   quantity: number;
   unit_cost: number;
@@ -13,13 +30,14 @@ export function loanDebtAmount(loan: {
   valuation_type: "costo" | "pvp" | "promocion";
   custom_price: number | null;
 }): number {
-  const unitValue =
-    loan.valuation_type === "promocion"
-      ? (loan.custom_price ?? 0)
-      : loan.valuation_type === "pvp"
-        ? loan.unit_price
-        : loan.unit_cost;
-  return unitValue * loan.quantity;
+  return (
+    loanUnitValue({
+      valuationType: loan.valuation_type,
+      unitCost: loan.unit_cost,
+      unitPrice: loan.unit_price,
+      customPrice: loan.custom_price,
+    }) * loan.quantity
+  );
 }
 
 export interface DebtEntry {

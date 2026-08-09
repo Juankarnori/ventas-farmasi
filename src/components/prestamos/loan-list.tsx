@@ -18,6 +18,11 @@ export interface LoanRow {
   loanDate: string;
   note: string | null;
   status: "pendiente" | "devuelto" | "vendido";
+  // Precio unitario según el tipo de valoración del préstamo (ver
+  // loanUnitValue) y debtAmount = unitValue × quantity (loanDebtAmount) —
+  // mismo cálculo que el formulario y el detalle, para que los tres
+  // números nunca puedan desincronizarse entre sí.
+  unitValue: number;
   debtAmount: number;
   debtSettled: boolean;
 }
@@ -47,6 +52,8 @@ export function LoanList({ loans }: { loans: LoanRow[] }) {
           <Th>Producto</Th>
           <Th>De → A</Th>
           <Th className="text-right">Cant.</Th>
+          <Th className="text-right">Valor unitario</Th>
+          <Th className="text-right">Total</Th>
           <Th>Estado</Th>
           <Th />
         </Tr>
@@ -60,6 +67,8 @@ export function LoanList({ loans }: { loans: LoanRow[] }) {
               {loan.fromName} → {loan.toName}
             </Td>
             <Td numeric>{loan.quantity}</Td>
+            <Td numeric>{formatCurrency(loan.unitValue)}</Td>
+            <Td numeric>{formatCurrency(loan.debtAmount)}</Td>
             <Td>
               <Badge variant={STATUS_VARIANT[loan.status]}>{STATUS_LABEL[loan.status]}</Badge>
             </Td>

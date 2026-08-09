@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
 import { formatCurrency } from "@/lib/utils/currency";
+import { loanUnitValue } from "@/lib/utils/loan-debt";
 import type { LoanValuationType } from "@/lib/types/database.types";
 
 export interface LoanableProduct {
@@ -13,7 +14,9 @@ export interface LoanableProduct {
   name: string;
   category_id: string | null;
   line_id: string | null;
-  variants: { id: string; color_name: string }[];
+  cost_price: number;
+  sale_price: number;
+  variants: { id: string; color_name: string; cost_override: number | null; price_override: number | null }[];
 }
 
 export function LoanForm({
@@ -58,6 +61,25 @@ export function LoanForm({
   const hasValidCustomPrice = customPrice !== "" && Number.isFinite(customPriceNumber) && customPriceNumber > 0;
 
   const selectedProduct = productById.get(productId);
+  const selectedVariant = selectedProduct?.variants.find((v) => v.id === variantId);
+
+  // Mismo cálculo que loanDebtAmount (guardado del préstamo) y que la
+  // tabla del listado — acá se arma "en vivo" con el costo/precio del
+  // catálogo (el préstamo todavía no existe) en vez de con valores ya
+  // persistidos.
+  const effectiveCost = selectedVariant?.cost_override ?? selectedProduct?.cost_price ?? 0;
+  const effectivePrice = selectedVariant?.price_override ?? selectedProduct?.sale_price ?? 0;
+  const unitValue =
+    valuationType === "promocion"
+      ? hasValidCustomPrice
+        ? customPriceNumber
+        : null
+      : loanUnitValue({
+          valuationType,
+          unitCost: effectiveCost,
+          unitPrice: effectivePrice,
+          customPrice: null,
+        });
 
   // Igual que en Pedidos/Ventas: las opciones del select son la lista
   // filtrada, más el producto ya elegido si el filtro cambió después y ya
@@ -159,6 +181,12 @@ export function LoanForm({
           quien prestó pierde la ganancia que hubiera hecho vendiéndolo ella misma, o al precio de
           promoción si el producto se compró puntualmente a un precio distinto de los dos anteriores.
         </p>
+        {unitValue !== null && (
+          <p className="mt-1 text-xs font-medium text-ink/70">
+            Precio unitario: {formatCurrency(unitValue)} · Total: {formatCurrency(unitValue * quantity)} (
+            {quantity} unidad{quantity === 1 ? "" : "es"})
+          </p>
+        )}
       </div>
 
       {valuationType === "promocion" && (
@@ -174,11 +202,6 @@ export function LoanForm({
             onChange={(e) => setCustomPrice(e.target.value)}
             required
           />
-          {hasValidCustomPrice && (
-            <p className="mt-1 text-xs text-ink/60">
-              Total: {formatCurrency(customPriceNumber * quantity)} ({quantity} × {formatCurrency(customPriceNumber)})
-            </p>
-          )}
         </div>
       )}
 

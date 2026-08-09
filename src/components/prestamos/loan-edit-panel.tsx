@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
 import { formatDate } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/currency";
+import { loanUnitValue } from "@/lib/utils/loan-debt";
 import type { LoanableProduct } from "./loan-form";
 import type { LoanValuationType, LoanSettlementMethod } from "@/lib/types/database.types";
 
@@ -31,6 +32,40 @@ export interface LoanEditData {
   note: string | null;
   valuationType: LoanValuationType;
   customPrice: number | null;
+  // Costo/PVP tal como quedaron guardados en el préstamo (snapshot del
+  // momento en que se prestó) — con esto se arma "Precio unitario ·
+  // Total" en modo lectura, con la misma fórmula (loanUnitValue) que usa
+  // el formulario y el listado.
+  unitCost: number;
+  unitPrice: number;
+}
+
+// Badge de valoración + "Precio unitario · Total" — mismo cálculo
+// (loanUnitValue) en cualquier lado que necesite mostrar el valor de un
+// préstamo ya creado: acá adentro (modo lectura) y en /prestamos/[id]
+// para los estados que no pasan por LoanEditPanel (devuelto/vendido).
+export function LoanValuationSummary({
+  valuationType,
+  unitCost,
+  unitPrice,
+  customPrice,
+  quantity,
+}: {
+  valuationType: LoanValuationType;
+  unitCost: number;
+  unitPrice: number;
+  customPrice: number | null;
+  quantity: number;
+}) {
+  const unitValue = loanUnitValue({ valuationType, unitCost, unitPrice, customPrice });
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge variant="sage">{VALUATION_LABEL[valuationType]}</Badge>
+      <span className="text-xs text-ink/60">
+        Precio unitario: {formatCurrency(unitValue)} · Total: {formatCurrency(unitValue * quantity)}
+      </span>
+    </div>
+  );
 }
 
 // Edición completa de un préstamo mientras sigue 'pendiente' (variante,
@@ -89,6 +124,24 @@ export function LoanEditPanel({
   const customPriceNumber = Number(customPrice);
   const hasValidCustomPrice = customPrice !== "" && Number.isFinite(customPriceNumber) && customPriceNumber > 0;
   const selectedProduct = productById.get(productId);
+  const selectedVariant = selectedProduct?.variants.find((v) => v.id === variantId);
+
+  // Mismo cálculo que en LoanForm y que loanDebtAmount — acá con el
+  // costo/precio del catálogo (podría ser otra variante que la que tenía
+  // el préstamo original) en vez del snapshot ya guardado.
+  const effectiveCost = selectedVariant?.cost_override ?? selectedProduct?.cost_price ?? 0;
+  const effectivePrice = selectedVariant?.price_override ?? selectedProduct?.sale_price ?? 0;
+  const editUnitValue =
+    valuationType === "promocion"
+      ? hasValidCustomPrice
+        ? customPriceNumber
+        : null
+      : loanUnitValue({
+          valuationType,
+          unitCost: effectiveCost,
+          unitPrice: effectivePrice,
+          customPrice: null,
+        });
 
   const productOptions =
     filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId)
@@ -167,11 +220,14 @@ export function LoanEditPanel({
             <Pencil className="h-3.5 w-3.5" /> Editar
           </button>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Badge variant="sage">
-            {VALUATION_LABEL[loan.valuationType]}
-            {loan.valuationType === "promocion" && loan.customPrice != null && ` · ${formatCurrency(loan.customPrice)}`}
-          </Badge>
+        <div className="mt-3">
+          <LoanValuationSummary
+            valuationType={loan.valuationType}
+            unitCost={loan.unitCost}
+            unitPrice={loan.unitPrice}
+            customPrice={loan.customPrice}
+            quantity={loan.quantity}
+          />
         </div>
         {loan.note && <p className="mt-3 text-sm text-ink/70">{loan.note}</p>}
       </Card>
@@ -244,6 +300,12 @@ export function LoanEditPanel({
               <option value="pvp">A precio de venta (para que lo venda ella)</option>
               <option value="promocion">En promoción (precio manual)</option>
             </Select>
+            {editUnitValue !== null && (
+              <p className="mt-1 text-xs font-medium text-ink/70">
+                Precio unitario: {formatCurrency(editUnitValue)} · Total:{" "}
+                {formatCurrency(editUnitValue * quantity)} ({quantity} unidad{quantity === 1 ? "" : "es"})
+              </p>
+            )}
           </div>
 
           {valuationType === "promocion" && (
@@ -259,11 +321,6 @@ export function LoanEditPanel({
                 onChange={(e) => setCustomPrice(e.target.value)}
                 required
               />
-              {hasValidCustomPrice && (
-                <p className="mt-1 text-xs text-ink/60">
-                  Total: {formatCurrency(customPriceNumber * quantity)} ({quantity} × {formatCurrency(customPriceNumber)})
-                </p>
-              )}
             </div>
           )}
 

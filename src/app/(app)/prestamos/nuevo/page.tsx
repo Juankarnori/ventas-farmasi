@@ -10,11 +10,11 @@ export default async function NuevoPrestamoPage() {
     await Promise.all([
       supabase
         .from("products")
-        .select("id, name, category_id, line_id")
+        .select("id, name, category_id, line_id, cost_price, sale_price")
         .order("name", { ascending: true }),
       supabase
         .from("product_variants")
-        .select("id, product_id, color_name")
+        .select("id, product_id, color_name, cost_override, price_override")
         .order("color_name", { ascending: true }),
       supabase.from("profiles").select("id, display_name").not("user_id", "is", null),
       supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),
