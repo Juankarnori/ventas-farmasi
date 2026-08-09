@@ -1,0 +1,29 @@
+-- Bug tras aplicar 0033: "Pedir prestado" (createLoanQuick) empezó a
+-- fallar con
+--   "Could not find the function public.create_loan(p_from_profile_id,
+--    p_note, p_quantity, p_to_profile_id, p_variant_id) in the schema
+--    cache"
+--
+-- create_loan YA tiene valores por defecto para p_valuation_type
+-- ('costo') y p_custom_price (null) desde 0030 — la llamada de
+-- createLoanQuick, que solo pasa los 5 parámetros originales por nombre,
+-- es válida y debería resolver contra esa función sin problema (Opción A
+-- del pedido de corrección: ya estaba implementada, no hacía falta
+-- tocar create_loan ni createLoanQuick).
+--
+-- El problema real es el mensaje mismo: "in the schema cache". PostgREST
+-- (la capa que expone supabase.rpc(...) como HTTP) mantiene su PROPIO
+-- caché en memoria de qué funciones existen y qué parámetros/valores por
+-- defecto tiene cada una — no consulta pg_proc en cada request. Ese
+-- caché se refresca solo con NOTIFY pgrst, 'reload schema' (el editor
+-- SQL del dashboard de Supabase lo dispara solo después de cada
+-- sentencia; correr las migraciones por otra vía, ej. `supabase db
+-- push`/psql directo, NO lo dispara). 0033 borró y recreó firmas de
+-- create_loan/update_loan sin ese NOTIFY al final, así que PostgREST
+-- se quedó sirviendo su caché viejo (que todavía tenía la firma de 5
+-- parámetros ya borrada) hasta el día de hoy.
+--
+-- Regla a futuro: toda migración que haga DROP/CREATE OR REPLACE de una
+-- función expuesta por PostgREST (cualquier RPC que se llame desde el
+-- cliente vía supabase.rpc(...)) debe terminar con este NOTIFY.
+notify pgrst, 'reload schema';
