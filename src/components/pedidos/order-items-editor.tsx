@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils/currency";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
+import { QuickAddByCode } from "@/components/shared/quick-add-by-code";
 import { filterProducts } from "@/lib/utils/product-search";
 
 export interface OrderableVariant {
@@ -129,6 +130,26 @@ export function OrderItemsEditor({
     updateRow(key, { variant_id: variantId, unit_cost: effectiveCost(product, variant) });
   }
 
+  // Atajo de "agregar por código": si esa variante ya está en la lista,
+  // suma 1 en vez de duplicar la fila.
+  function onQuickAdd(productId: string, variantId: string) {
+    const product = productById.get(productId);
+    const variant = product?.variants.find((v) => v.id === variantId);
+    if (!product || !variant) return;
+
+    const existing = rows.find((r) => r.variant_id === variantId);
+    if (existing) {
+      updateRow(existing.key, { quantity: existing.quantity + 1 });
+      return;
+    }
+
+    setRows((r) => [
+      ...r,
+      { key: nextKey, product_id: productId, variant_id: variantId, quantity: 1, unit_cost: effectiveCost(product, variant) },
+    ]);
+    setNextKey((k) => k + 1);
+  }
+
   const total = rows.reduce((sum, r) => sum + r.quantity * r.unit_cost, 0);
 
   const itemsJson = JSON.stringify(
@@ -155,6 +176,8 @@ export function OrderItemsEditor({
         query={query}
         onQueryChange={setQuery}
       />
+
+      <QuickAddByCode products={products} onFound={onQuickAdd} />
 
       {rows.map((row) => {
         const product = productById.get(row.product_id);

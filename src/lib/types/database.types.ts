@@ -634,6 +634,10 @@ export interface Database {
         Args: Record<string, never>;
         Returns: { customer_id: string; pending_balance: number }[];
       };
+      list_customer_last_purchase: {
+        Args: Record<string, never>;
+        Returns: { customer_id: string; last_purchase_date: string }[];
+      };
       get_undelivered_sale_ids: {
         Args: Record<string, never>;
         Returns: { sale_id: string }[];

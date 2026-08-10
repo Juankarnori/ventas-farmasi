@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/currency";
+import { formatDate } from "@/lib/utils/date";
 import { WhatsAppButton } from "@/components/shared/whatsapp-button";
 
 export interface CustomerCardData {
@@ -14,6 +15,10 @@ export interface CustomerCardData {
   // Suma de saldo de apartados con abonos pendientes. `undefined`/0 = no
   // debe nada — en ese caso no se muestra el badge (ver más abajo).
   pendingBalance?: number;
+  // Contado Y apartados (solo se excluyen las canceladas) — ver
+  // list_customer_last_purchase. `null` = nunca compró, no se muestra
+  // nada en ese espacio.
+  lastPurchaseDate: string | null;
 }
 
 export function CustomerCard({ customer }: { customer: CustomerCardData }) {
@@ -62,6 +67,12 @@ export function CustomerCard({ customer }: { customer: CustomerCardData }) {
       {/* Solo si hay notas cargadas — nada de placeholder "Sin notas" que
           ensucie la tarjeta cuando no hay nada que mostrar. */}
       {customer.notes && <p className="mt-2 line-clamp-3 text-xs text-ink/60">{customer.notes}</p>}
+
+      {/* Mismo criterio que las notas: si nunca compró, no se muestra
+          nada acá — nada de "Sin compras" ensuciando la tarjeta. */}
+      {customer.lastPurchaseDate && (
+        <p className="mt-2 text-xs text-ink/50">Última compra: {formatDate(customer.lastPurchaseDate)}</p>
+      )}
 
       <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
         <div>

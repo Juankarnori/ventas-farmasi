@@ -27,26 +27,35 @@ export default async function ClientesPage({
     .is("archived_at", null)
     .order("name", { ascending: true });
   if (q) query = query.or(`name.ilike.%${q}%,phone.ilike.%${q}%`);
-  const [{ data: customers }, { data: totals }, { data: pendingBalances }, followUpTasks] = await Promise.all([
-    query,
-    // Clientes es un registro compartido de seguimiento (como Catálogo o
-    // Préstamos): el ranking por total gastado tiene que sumar las ventas
-    // de todas las usuarias, no solo las propias — por eso esto no
-    // consulta `sales`/`sale_items` directo (RLS los filtraría a "lo mío")
-    // sino una función que agrega el negocio entero a propósito. Ver
-    // 0022_privacy_orders_sales.sql.
-    supabase.rpc("list_customer_totals"),
-    // Badge de "Saldo pendiente": mismo criterio compartido de arriba.
-    supabase.rpc("list_customer_pending_balances"),
-    // "Hoy toca contactar": misma función que usa el resumen de Inicio,
-    // para que las dos vistas siempre coincidan.
-    getPendingFollowUps(supabase),
-  ]);
+  const [{ data: customers }, { data: totals }, { data: pendingBalances }, { data: lastPurchases }, followUpTasks] =
+    await Promise.all([
+      query,
+      // Clientes es un registro compartido de seguimiento (como Catálogo o
+      // Préstamos): el ranking por total gastado tiene que sumar las ventas
+      // de todas las usuarias, no solo las propias — por eso esto no
+      // consulta `sales`/`sale_items` directo (RLS los filtraría a "lo mío")
+      // sino una función que agrega el negocio entero a propósito. Ver
+      // 0022_privacy_orders_sales.sql.
+      supabase.rpc("list_customer_totals"),
+      // Badge de "Saldo pendiente": mismo criterio compartido de arriba.
+      supabase.rpc("list_customer_pending_balances"),
+      // Fecha de última compra: cuenta contado Y apartados (solo se
+      // excluyen las canceladas) — a diferencia del total gastado, acá
+      // interesa cuándo eligió productos por última vez, no si ya
+      // terminó de pagarlos. Ver 0039_customer_last_purchase.sql.
+      supabase.rpc("list_customer_last_purchase"),
+      // "Hoy toca contactar": misma función que usa el resumen de Inicio,
+      // para que las dos vistas siempre coincidan.
+      getPendingFollowUps(supabase),
+    ]);
 
   const totalsByCustomer = new Map((totals ?? []).map((t) => [t.customer_id, t.total_spent]));
   const purchaseCountByCustomer = new Map((totals ?? []).map((t) => [t.customer_id, t.purchase_count]));
   const pendingBalanceByCustomer = new Map(
     (pendingBalances ?? []).map((b) => [b.customer_id, b.pending_balance]),
+  );
+  const lastPurchaseByCustomer = new Map(
+    (lastPurchases ?? []).map((l) => [l.customer_id, l.last_purchase_date]),
   );
 
   const cards: CustomerCardData[] = (customers ?? [])
@@ -58,6 +67,7 @@ export default async function ClientesPage({
       totalSpent: totalsByCustomer.get(c.id) ?? 0,
       purchaseCount: purchaseCountByCustomer.get(c.id) ?? 0,
       pendingBalance: pendingBalanceByCustomer.get(c.id),
+      lastPurchaseDate: lastPurchaseByCustomer.get(c.id) ?? null,
     }))
     .sort((a, b) => b.totalSpent - a.totalSpent);
 
