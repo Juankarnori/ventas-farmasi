@@ -14,7 +14,7 @@ export default async function NuevoPrestamoPage() {
         .order("name", { ascending: true }),
       supabase
         .from("product_variants")
-        .select("id, product_id, color_name, cost_override, price_override")
+        .select("id, product_id, color_name, cost_override, price_override, sku")
         .order("color_name", { ascending: true }),
       supabase.from("profiles").select("id, display_name").not("user_id", "is", null),
       supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),

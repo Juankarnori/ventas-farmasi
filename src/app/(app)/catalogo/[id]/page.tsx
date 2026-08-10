@@ -54,6 +54,7 @@ export default async function EditarProductoPage({
       id: v.id,
       color_name: v.color_name,
       color_hex: v.color_hex,
+      sku: v.sku,
       myStock: mine?.stock ?? 0,
       otherStock: other?.stock ?? 0,
       otherName: otherProfile?.display_name ?? "La otra",

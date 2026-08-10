@@ -9,6 +9,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Label, Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
+import { filterProducts } from "@/lib/utils/product-search";
 import { formatDate } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/currency";
 import { loanUnitValue } from "@/lib/utils/loan-debt";
@@ -100,15 +101,11 @@ export function LoanEditPanel({
 
   const [filterCategoryId, setFilterCategoryId] = useState("");
   const [filterLineId, setFilterLineId] = useState("");
+  const [query, setQuery] = useState("");
 
   const filteredProducts = useMemo(
-    () =>
-      products.filter((p) => {
-        if (filterCategoryId && p.category_id !== filterCategoryId) return false;
-        if (filterLineId && p.line_id !== filterLineId) return false;
-        return true;
-      }),
-    [products, filterCategoryId, filterLineId],
+    () => filterProducts(products, { categoryId: filterCategoryId, lineId: filterLineId, query }),
+    [products, filterCategoryId, filterLineId, query],
   );
 
   function onFilterCategoryChange(id: string) {
@@ -245,6 +242,8 @@ export function LoanEditPanel({
             lineId={filterLineId}
             onCategoryChange={onFilterCategoryChange}
             onLineChange={setFilterLineId}
+            query={query}
+            onQueryChange={setQuery}
           />
 
           <div>

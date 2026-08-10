@@ -20,23 +20,43 @@ export default async function CatalogoPage({
   ]);
 
   let query = supabase.from("products").select("*").order("name", { ascending: true });
-  if (q) query = query.ilike("name", `%${q}%`);
   if (categoria) query = query.eq("category_id", categoria);
   if (linea) query = query.eq("line_id", linea);
 
-  const { data: products } = await query;
+  // El código (sku) vive en product_variants, no en products, así que
+  // "buscar por nombre o código" no puede resolverse con un solo
+  // .ilike() del lado de la base — se traen los ids de variante que
+  // matchean por sku aparte y se combinan acá mismo con el match por
+  // nombre, en vez de armar un filtro .or() con el texto de la usuaria
+  // interpolado a mano (ese texto podría traer comas/paréntesis que
+  // rompan la sintaxis de filtro de PostgREST).
+  const [{ data: productsRaw }, { data: skuMatches }] = await Promise.all([
+    query,
+    q ? supabase.from("product_variants").select("product_id").ilike("sku", `%${q}%`) : Promise.resolve({ data: [] }),
+  ]);
+
+  const skuMatchedProductIds = new Set((skuMatches ?? []).map((v) => v.product_id));
+  const qLower = q?.toLowerCase() ?? "";
+  const products = q
+    ? (productsRaw ?? []).filter(
+        (p) => p.name.toLowerCase().includes(qLower) || skuMatchedProductIds.has(p.id),
+      )
+    : productsRaw;
 
   const productIds = (products ?? []).map((p) => p.id);
   const { data: variants } =
     productIds.length > 0
       ? await supabase
           .from("product_variants")
-          .select("id, product_id, color_name, color_hex")
+          .select("id, product_id, color_name, color_hex, sku")
           .in("product_id", productIds)
           .order("color_name", { ascending: true })
       : { data: [] };
 
-  const variantsByProduct = new Map<string, { id: string; color_name: string; color_hex: string | null }[]>();
+  const variantsByProduct = new Map<
+    string,
+    { id: string; color_name: string; color_hex: string | null; sku: string | null }[]
+  >();
   for (const v of variants ?? []) {
     const list = variantsByProduct.get(v.product_id) ?? [];
     list.push(v);

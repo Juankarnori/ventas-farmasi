@@ -40,7 +40,7 @@ export default async function VentaDetallePage({
       .order("name", { ascending: true }),
     supabase
       .from("product_variants")
-      .select("id, product_id, color_name, price_override")
+      .select("id, product_id, color_name, price_override, sku")
       .order("color_name", { ascending: true }),
     // Stock de la VENDEDORA de esta venta, no de quien está mirando la
     // página — una admin puede estar corrigiendo la venta de otra
@@ -83,6 +83,7 @@ export default async function VentaDetallePage({
         id: v.id,
         color_name: v.color_name,
         price_override: v.price_override,
+        sku: v.sku,
         stock: (sellerStockByVariant.get(v.id) ?? 0) + (oldQtyByVariant.get(v.id) ?? 0),
       })),
     }))

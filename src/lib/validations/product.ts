@@ -27,6 +27,10 @@ export const productVariantSchema = z.object({
     .trim()
     .regex(/^#[0-9a-fA-F]{6}$/, "Tiene que ser un color hex, ej: #733865")
     .nullable(),
+  // Código corto (SKU) — opcional, para buscar más rápido que por nombre
+  // completo a medida que el catálogo crece. Nunca obligatorio: no debe
+  // trabar la carga de lo que ya existe mientras el catálogo es chico.
+  sku: z.string().trim().nullable(),
   stock: z.coerce.number().int().min(0, "No puede ser negativo"),
   price_override: z.coerce.number().min(0, "No puede ser negativo").nullable(),
   cost_override: z.coerce.number().min(0, "No puede ser negativo").nullable(),

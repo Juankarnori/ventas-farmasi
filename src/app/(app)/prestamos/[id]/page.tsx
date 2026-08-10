@@ -44,7 +44,7 @@ export default async function PrestamoDetallePage({
         .order("name", { ascending: true }),
       supabase
         .from("product_variants")
-        .select("id, product_id, color_name, cost_override, price_override")
+        .select("id, product_id, color_name, cost_override, price_override, sku")
         .order("color_name", { ascending: true }),
       supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),
       supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),
@@ -66,6 +66,7 @@ export default async function PrestamoDetallePage({
         color_name: v.color_name,
         cost_override: v.cost_override,
         price_override: v.price_override,
+        sku: v.sku,
       })),
     }))
     .filter((p) => p.variants.length > 0);

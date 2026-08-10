@@ -76,6 +76,7 @@ export async function createProduct(formData: FormData) {
         product_id: product.id,
         color_name: v.color_name,
         color_hex: v.color_hex,
+        sku: v.sku,
         price_override: v.price_override,
         cost_override: v.cost_override,
         image_url: v.image_url,
@@ -135,6 +136,7 @@ export async function updateProduct(productId: string, formData: FormData) {
       .update({
         color_name: v.color_name,
         color_hex: v.color_hex,
+        sku: v.sku,
         price_override: v.price_override,
         cost_override: v.cost_override,
         image_url: v.image_url,
@@ -165,6 +167,7 @@ export async function updateProduct(productId: string, formData: FormData) {
         product_id: productId,
         color_name: v.color_name,
         color_hex: v.color_hex,
+        sku: v.sku,
         price_override: v.price_override,
         cost_override: v.cost_override,
         image_url: v.image_url,

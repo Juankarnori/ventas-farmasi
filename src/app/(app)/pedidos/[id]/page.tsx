@@ -34,7 +34,7 @@ export default async function PedidoDetallePage({
       .order("name", { ascending: true }),
     supabase
       .from("product_variants")
-      .select("id, product_id, color_name, cost_override")
+      .select("id, product_id, color_name, cost_override, sku")
       .order("color_name", { ascending: true }),
     supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),
     supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),

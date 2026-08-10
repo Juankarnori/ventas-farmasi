@@ -33,7 +33,10 @@ export default async function EditarUsoPersonalPage({ params }: { params: Promis
   // edición, así que no hace falta calcularlo bien; queda en 0.
   const [{ data: allProducts }, { data: allVariants }, { data: categories }, { data: lines }] = await Promise.all([
     supabase.from("products").select("id, name, category_id, line_id").order("name", { ascending: true }),
-    supabase.from("product_variants").select("id, product_id, color_name").order("color_name", { ascending: true }),
+    supabase
+      .from("product_variants")
+      .select("id, product_id, color_name, sku")
+      .order("color_name", { ascending: true }),
     supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),
     supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),
   ]);
@@ -50,7 +53,12 @@ export default async function EditarUsoPersonalPage({ params }: { params: Promis
     name: p.name,
     category_id: p.category_id,
     line_id: p.line_id,
-    variants: (variantsByProduct.get(p.id) ?? []).map((v) => ({ id: v.id, color_name: v.color_name, stock: 0 })),
+    variants: (variantsByProduct.get(p.id) ?? []).map((v) => ({
+      id: v.id,
+      color_name: v.color_name,
+      sku: v.sku,
+      stock: 0,
+    })),
   }));
 
   const productById = new Map((allProducts ?? []).map((p) => [p.id, p]));

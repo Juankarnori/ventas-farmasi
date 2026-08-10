@@ -16,7 +16,7 @@ export default async function NuevaVentaPage() {
         .order("name", { ascending: true }),
       supabase
         .from("product_variants")
-        .select("id, product_id, color_name, price_override")
+        .select("id, product_id, color_name, price_override, sku")
         .order("color_name", { ascending: true }),
       supabase.from("variant_stock").select("variant_id, stock").eq("profile_id", profile.id),
       supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),

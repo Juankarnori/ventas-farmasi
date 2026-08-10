@@ -67,7 +67,7 @@ export default async function ApartadoDetallePage({
       .order("name", { ascending: true }),
     supabase
       .from("product_variants")
-      .select("id, product_id, color_name, price_override")
+      .select("id, product_id, color_name, price_override, sku")
       .order("color_name", { ascending: true }),
     // Stock de la VENDEDORA de este apartado, no de quien mira la página
     // — igual criterio que en la edición de ventas de contado.
@@ -116,6 +116,7 @@ export default async function ApartadoDetallePage({
         id: v.id,
         color_name: v.color_name,
         price_override: v.price_override,
+        sku: v.sku,
         stock: (sellerStockByVariant.get(v.id) ?? 0) + (oldQtyByVariant.get(v.id) ?? 0),
       })),
     }))

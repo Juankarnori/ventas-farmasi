@@ -12,11 +12,16 @@ export interface ProductCardData {
   low_stock_threshold: number;
   category: { name: string; color: string } | null;
   line: { name: string } | null;
-  variants: { id: string; color_name: string; color_hex: string | null }[];
+  variants: { id: string; color_name: string; color_hex: string | null; sku: string | null }[];
 }
 
 export function ProductCard({ product }: { product: ProductCardData }) {
   const lowStock = product.stock <= product.low_stock_threshold;
+  // El código es por variante, no por producto — con un solo color no hay
+  // ambigüedad posible y se muestra tal cual; con varios colores cada uno
+  // tendría el suyo, así que acá no se elige uno solo para no mostrar un
+  // código que no representa a los demás.
+  const sku = product.variants.length === 1 ? product.variants[0].sku : null;
 
   return (
     <Link
@@ -43,6 +48,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
         </div>
         <div className="flex flex-1 flex-col gap-1.5 p-3">
           <p className="line-clamp-2 text-sm font-medium text-ink">{product.name}</p>
+          {sku && <p className="-mt-1 text-xs text-ink/40">#{sku}</p>}
           {product.category && (
             <Badge variant="neutral" className="w-fit">
               {product.category.name}

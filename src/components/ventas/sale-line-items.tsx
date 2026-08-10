@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils/currency";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
+import { filterProducts } from "@/lib/utils/product-search";
 import { BorrowStockDialog } from "./borrow-stock-dialog";
 
 export interface SellableVariant {
@@ -13,6 +14,7 @@ export interface SellableVariant {
   color_name: string;
   stock: number;
   price_override: number | null;
+  sku: string | null;
 }
 
 export interface SellableProduct {
@@ -78,15 +80,11 @@ export function SaleLineItems({
 
   const [filterCategoryId, setFilterCategoryId] = useState("");
   const [filterLineId, setFilterLineId] = useState("");
+  const [query, setQuery] = useState("");
 
   const filteredProducts = useMemo(
-    () =>
-      productsState.filter((p) => {
-        if (filterCategoryId && p.category_id !== filterCategoryId) return false;
-        if (filterLineId && p.line_id !== filterLineId) return false;
-        return true;
-      }),
-    [productsState, filterCategoryId, filterLineId],
+    () => filterProducts(productsState, { categoryId: filterCategoryId, lineId: filterLineId, query }),
+    [productsState, filterCategoryId, filterLineId, query],
   );
 
   function onFilterCategoryChange(id: string) {
@@ -181,6 +179,8 @@ export function SaleLineItems({
         lineId={filterLineId}
         onCategoryChange={onFilterCategoryChange}
         onLineChange={setFilterLineId}
+        query={query}
+        onQueryChange={setQuery}
       />
 
       {rows.map((row) => {

@@ -25,7 +25,7 @@ export default async function UsoPersonalPage({
         .order("name", { ascending: true }),
       supabase
         .from("product_variants")
-        .select("id, product_id, color_name")
+        .select("id, product_id, color_name, sku")
         .order("color_name", { ascending: true }),
       // Solo se puede registrar uso personal de lo que una tiene en su
       // propio stock — mismo criterio que Ventas.
@@ -53,6 +53,7 @@ export default async function UsoPersonalPage({
       variants: (variantsByProduct.get(p.id) ?? []).map((v) => ({
         id: v.id,
         color_name: v.color_name,
+        sku: v.sku,
         stock: myStockByVariant.get(v.id) ?? 0,
       })),
     }))

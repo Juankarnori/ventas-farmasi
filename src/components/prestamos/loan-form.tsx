@@ -5,6 +5,7 @@ import { Label, Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
+import { filterProducts } from "@/lib/utils/product-search";
 import { formatCurrency } from "@/lib/utils/currency";
 import { loanUnitValue } from "@/lib/utils/loan-debt";
 import type { LoanValuationType } from "@/lib/types/database.types";
@@ -16,7 +17,13 @@ export interface LoanableProduct {
   line_id: string | null;
   cost_price: number;
   sale_price: number;
-  variants: { id: string; color_name: string; cost_override: number | null; price_override: number | null }[];
+  variants: {
+    id: string;
+    color_name: string;
+    cost_override: number | null;
+    price_override: number | null;
+    sku: string | null;
+  }[];
 }
 
 export function LoanForm({
@@ -36,15 +43,11 @@ export function LoanForm({
 
   const [filterCategoryId, setFilterCategoryId] = useState("");
   const [filterLineId, setFilterLineId] = useState("");
+  const [query, setQuery] = useState("");
 
   const filteredProducts = useMemo(
-    () =>
-      products.filter((p) => {
-        if (filterCategoryId && p.category_id !== filterCategoryId) return false;
-        if (filterLineId && p.line_id !== filterLineId) return false;
-        return true;
-      }),
-    [products, filterCategoryId, filterLineId],
+    () => filterProducts(products, { categoryId: filterCategoryId, lineId: filterLineId, query }),
+    [products, filterCategoryId, filterLineId, query],
   );
 
   function onFilterCategoryChange(id: string) {
@@ -120,6 +123,8 @@ export function LoanForm({
         lineId={filterLineId}
         onCategoryChange={onFilterCategoryChange}
         onLineChange={setFilterLineId}
+        query={query}
+        onQueryChange={setQuery}
       />
 
       <div>

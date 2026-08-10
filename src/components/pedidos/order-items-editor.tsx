@@ -6,11 +6,13 @@ import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils/currency";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
+import { filterProducts } from "@/lib/utils/product-search";
 
 export interface OrderableVariant {
   id: string;
   color_name: string;
   cost_override: number | null;
+  sku: string | null;
 }
 
 export interface OrderableProduct {
@@ -56,15 +58,11 @@ export function OrderItemsEditor({
 
   const [filterCategoryId, setFilterCategoryId] = useState("");
   const [filterLineId, setFilterLineId] = useState("");
+  const [query, setQuery] = useState("");
 
   const filteredProducts = useMemo(
-    () =>
-      products.filter((p) => {
-        if (filterCategoryId && p.category_id !== filterCategoryId) return false;
-        if (filterLineId && p.line_id !== filterLineId) return false;
-        return true;
-      }),
-    [products, filterCategoryId, filterLineId],
+    () => filterProducts(products, { categoryId: filterCategoryId, lineId: filterLineId, query }),
+    [products, filterCategoryId, filterLineId, query],
   );
 
   function onFilterCategoryChange(id: string) {
@@ -154,6 +152,8 @@ export function OrderItemsEditor({
         lineId={filterLineId}
         onCategoryChange={onFilterCategoryChange}
         onLineChange={setFilterLineId}
+        query={query}
+        onQueryChange={setQuery}
       />
 
       {rows.map((row) => {

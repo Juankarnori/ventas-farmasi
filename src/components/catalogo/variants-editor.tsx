@@ -9,6 +9,7 @@ export interface VariantDefault {
   id: string;
   color_name: string;
   color_hex: string | null;
+  sku: string | null;
   myStock: number;
   otherStock: number;
   otherName: string;
@@ -23,6 +24,7 @@ interface VariantRow {
   color_name: string;
   useCustomColor: boolean;
   color_hex: string;
+  sku: string;
   stock: number;
   otherStock?: number;
   otherName?: string;
@@ -42,6 +44,7 @@ function rowsFromDefaults(defaults?: VariantDefault[]): VariantRow[] {
         color_name: "Único",
         useCustomColor: false,
         color_hex: "#733865",
+        sku: "",
         stock: 0,
         useDifferentPrice: false,
         price_override: 0,
@@ -59,6 +62,7 @@ function rowsFromDefaults(defaults?: VariantDefault[]): VariantRow[] {
     color_name: v.color_name,
     useCustomColor: !!v.color_hex,
     color_hex: v.color_hex ?? "#733865",
+    sku: v.sku ?? "",
     stock: v.myStock,
     otherStock: v.otherStock,
     otherName: v.otherName,
@@ -83,6 +87,7 @@ export function VariantsEditor({ defaultVariants }: { defaultVariants?: VariantD
         color_name: "",
         useCustomColor: false,
         color_hex: "#733865",
+        sku: "",
         stock: 0,
         useDifferentPrice: false,
         price_override: 0,
@@ -108,6 +113,7 @@ export function VariantsEditor({ defaultVariants }: { defaultVariants?: VariantD
       id: r.id ?? null,
       color_name: r.color_name.trim() || "Único",
       color_hex: r.useCustomColor ? r.color_hex : null,
+      sku: r.sku.trim() || null,
       stock: r.stock,
       price_override: r.useDifferentPrice ? r.price_override : null,
       cost_override: r.useDifferentCost ? r.cost_override : null,
@@ -131,6 +137,15 @@ export function VariantsEditor({ defaultVariants }: { defaultVariants?: VariantD
                   value={row.color_name}
                   onChange={(e) => updateRow(row.key, { color_name: e.target.value })}
                   placeholder="Único"
+                />
+              </div>
+              <div className="w-32">
+                <Label htmlFor={`sku-${row.key}`}>Código (opcional)</Label>
+                <Input
+                  id={`sku-${row.key}`}
+                  value={row.sku}
+                  onChange={(e) => updateRow(row.key, { sku: e.target.value })}
+                  placeholder="Ej: COL-001"
                 />
               </div>
               <div>

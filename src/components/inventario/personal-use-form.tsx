@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
+import { filterProducts } from "@/lib/utils/product-search";
 import { todayISO } from "@/lib/utils/date";
 
 export interface PersonalUseProduct {
@@ -13,7 +14,7 @@ export interface PersonalUseProduct {
   name: string;
   category_id: string | null;
   line_id: string | null;
-  variants: { id: string; color_name: string; stock: number }[];
+  variants: { id: string; color_name: string; stock: number; sku: string | null }[];
 }
 
 // Precarga de un registro ya hecho, para editarlo. `stock` de cada
@@ -67,15 +68,11 @@ export function PersonalUseForm({
 
   const [filterCategoryId, setFilterCategoryId] = useState("");
   const [filterLineId, setFilterLineId] = useState("");
+  const [query, setQuery] = useState("");
 
   const filteredProducts = useMemo(
-    () =>
-      products.filter((p) => {
-        if (filterCategoryId && p.category_id !== filterCategoryId) return false;
-        if (filterLineId && p.line_id !== filterLineId) return false;
-        return true;
-      }),
-    [products, filterCategoryId, filterLineId],
+    () => filterProducts(products, { categoryId: filterCategoryId, lineId: filterLineId, query }),
+    [products, filterCategoryId, filterLineId, query],
   );
 
   function onFilterCategoryChange(id: string) {
@@ -175,6 +172,8 @@ export function PersonalUseForm({
           lineId={filterLineId}
           onCategoryChange={onFilterCategoryChange}
           onLineChange={setFilterLineId}
+          query={query}
+          onQueryChange={setQuery}
         />
 
         <div className="flex flex-wrap gap-3">
