@@ -33,6 +33,9 @@ export type AuthorizedEmailStatus = "pendiente" | "activo" | "revocado";
 export type FollowUpTriggerType = "despues_de_venta" | "cumpleanos";
 export type FollowUpTaskStatus = "pendiente" | "hecho" | "omitido";
 export type PaymentMethod = "efectivo" | "transferencia";
+export type ProspectType = "ingreso" | "venta";
+export type ProspectStatus = "pendiente" | "contactado" | "convertido" | "descartado";
+export type ProspectAppointmentStatus = "pendiente" | "completada" | "cancelada";
 
 export interface Database {
   public: {
@@ -265,6 +268,42 @@ export interface Database {
           message_preview: string;
         };
         Update: Partial<Database["public"]["Tables"]["follow_up_tasks"]["Row"]>;
+        Relationships: [];
+      };
+      prospects: {
+        Row: {
+          id: string;
+          name: string;
+          phone: string | null;
+          type: ProspectType;
+          note: string | null;
+          status: ProspectStatus;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["prospects"]["Row"]> & {
+          name: string;
+          type: ProspectType;
+        };
+        Update: Partial<Database["public"]["Tables"]["prospects"]["Row"]>;
+        Relationships: [];
+      };
+      prospect_appointments: {
+        Row: {
+          id: string;
+          prospect_id: string;
+          scheduled_at: string;
+          note: string | null;
+          status: ProspectAppointmentStatus;
+          reminder_sent: boolean;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["prospect_appointments"]["Row"]> & {
+          prospect_id: string;
+          scheduled_at: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["prospect_appointments"]["Row"]>;
         Relationships: [];
       };
       sales: {

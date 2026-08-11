@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
-export function ClientesTabs({ active }: { active: "clientes" | "reglas" | "calendario" }) {
+export function ClientesTabs({
+  active,
+}: {
+  active: "clientes" | "prospectos" | "reglas" | "calendario";
+}) {
   const tabs = [
     { value: "clientes" as const, label: "Clientes", href: "/clientes" },
+    { value: "prospectos" as const, label: "Prospectos", href: "/clientes/prospectos" },
     { value: "reglas" as const, label: "Reglas de seguimiento", href: "/clientes/reglas" },
     { value: "calendario" as const, label: "Calendario", href: "/clientes/calendario" },
   ];

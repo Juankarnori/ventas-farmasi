@@ -49,7 +49,13 @@ export async function createFollowUpRule(formData: FormData): Promise<{ error?: 
       throw new Error(error.message);
     }
 
+    // Mismo set de rutas que backfillFollowUpTasks/runBirthdayCheckManually
+    // — una regla nueva puede generar tareas que se ven en cualquiera de
+    // estas cuatro vistas, no solo en el listado de reglas.
     revalidatePath("/clientes/reglas");
+    revalidatePath("/clientes");
+    revalidatePath("/clientes/calendario");
+    revalidatePath("/");
     return {};
   } catch (e) {
     return { error: e instanceof Error ? e.message : "No se pudo crear la regla. Intentá de nuevo." };
@@ -77,6 +83,9 @@ export async function updateFollowUpRule(ruleId: string, formData: FormData): Pr
     }
 
     revalidatePath("/clientes/reglas");
+    revalidatePath("/clientes");
+    revalidatePath("/clientes/calendario");
+    revalidatePath("/");
     return {};
   } catch (e) {
     return { error: e instanceof Error ? e.message : "No se pudo guardar la regla. Intentá de nuevo." };
