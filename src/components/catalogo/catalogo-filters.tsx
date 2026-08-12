@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { FileText } from "lucide-react";
 import { CategoryLineFilter } from "@/components/shared/category-line-filter";
 
 export function CatalogoFilters({
@@ -46,15 +48,29 @@ export function CatalogoFilters({
   }
 
   return (
-    <CategoryLineFilter
-      categories={categories}
-      lines={lines}
-      categoryId={searchParams.get("categoria") ?? ""}
-      lineId={searchParams.get("linea") ?? ""}
-      onCategoryChange={onCategoryChange}
-      onLineChange={(id) => updateParam("linea", id)}
-      query={q}
-      onQueryChange={setQ}
-    />
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex-1">
+        <CategoryLineFilter
+          categories={categories}
+          lines={lines}
+          categoryId={searchParams.get("categoria") ?? ""}
+          lineId={searchParams.get("linea") ?? ""}
+          onCategoryChange={onCategoryChange}
+          onLineChange={(id) => updateParam("linea", id)}
+          query={q}
+          onQueryChange={setQ}
+        />
+      </div>
+      {/* Respeta el filtro activo (q/categoria/linea) tal cual está en la
+          URL de acá — abre en pestaña nueva para no perder el lugar en
+          Catálogo. */}
+      <Link
+        href={`/imprimir/catalogo?${searchParams.toString()}`}
+        target="_blank"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gold/40 px-3 py-2 text-sm font-medium text-ink hover:bg-gold/10"
+      >
+        <FileText className="h-4 w-4" /> Generar PDF
+      </Link>
+    </div>
   );
 }

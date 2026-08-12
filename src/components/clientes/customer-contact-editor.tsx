@@ -5,6 +5,7 @@ import { Pencil, X } from "lucide-react";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { WhatsAppButton } from "@/components/shared/whatsapp-button";
+import { PhoneInput } from "@/components/shared/phone-input";
 import { formatBirthday, calculateAge } from "@/lib/utils/date";
 import { updateCustomerContact } from "@/app/(app)/clientes/actions";
 
@@ -81,9 +82,8 @@ export function CustomerContactEditor({
           <Label htmlFor="name">Nombre</Label>
           <Input id="name" name="name" defaultValue={name} required />
         </div>
-        <div className="w-44">
-          <Label htmlFor="phone">Teléfono</Label>
-          <Input id="phone" name="phone" defaultValue={phone ?? ""} />
+        <div className="w-64">
+          <PhoneInput defaultValue={phone} />
         </div>
         <div className="w-44">
           <Label htmlFor="birth_date">Cumpleaños</Label>

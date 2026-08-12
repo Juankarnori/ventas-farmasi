@@ -1,5 +1,6 @@
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PhoneInput } from "@/components/shared/phone-input";
 
 export function CustomerForm({ action }: { action: (formData: FormData) => void | Promise<void> }) {
   return (
@@ -8,10 +9,7 @@ export function CustomerForm({ action }: { action: (formData: FormData) => void 
         <Label htmlFor="name">Nombre</Label>
         <Input id="name" name="name" required autoFocus />
       </div>
-      <div>
-        <Label htmlFor="phone">Teléfono (opcional)</Label>
-        <Input id="phone" name="phone" placeholder="Ej: 098 765 4321" />
-      </div>
+      <PhoneInput />
       <div>
         <Label htmlFor="birth_date">Cumpleaños (opcional)</Label>
         <Input id="birth_date" name="birth_date" type="date" />
