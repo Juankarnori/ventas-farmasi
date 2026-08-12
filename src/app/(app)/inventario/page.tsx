@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
 import { StockTable, type StockGroup } from "@/components/inventario/stock-table";
 import { MovementHistory } from "@/components/inventario/movement-history";
 import { InventarioTabs } from "@/components/inventario/inventario-tabs";
+import { InventarioFilters } from "@/components/inventario/inventario-filters";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils/cn";
 
@@ -12,26 +14,34 @@ type Vista = "mio" | "todo" | string; // string suelto = el profile_id de una pe
 export default async function InventarioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ vista?: string }>;
+  searchParams: Promise<{ vista?: string; categoria?: string; linea?: string }>;
 }) {
-  const { vista: vistaParam } = await searchParams;
+  const { vista: vistaParam, categoria, linea } = await searchParams;
 
   const profile = await getSessionProfile();
   const supabase = await createClient();
 
-  const [{ data: products }, { data: categories }, { data: variants }, { data: profiles }, { data: variantStock }, { data: movements }] =
-    await Promise.all([
-      supabase.from("products").select("*").order("name", { ascending: true }),
-      supabase.from("categories").select("id, name"),
-      supabase.from("product_variants").select("*").order("color_name", { ascending: true }),
-      supabase.from("profiles").select("id, display_name"),
-      supabase.from("variant_stock").select("*"),
-      supabase
-        .from("stock_movements")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50),
-    ]);
+  const [
+    { data: products },
+    { data: categories },
+    { data: lines },
+    { data: variants },
+    { data: profiles },
+    { data: variantStock },
+    { data: movements },
+  ] = await Promise.all([
+    supabase.from("products").select("*").order("name", { ascending: true }),
+    supabase.from("categories").select("id, name"),
+    supabase.from("product_lines").select("id, name, category_id").order("name", { ascending: true }),
+    supabase.from("product_variants").select("*").order("color_name", { ascending: true }),
+    supabase.from("profiles").select("id, display_name"),
+    supabase.from("variant_stock").select("*"),
+    supabase
+      .from("stock_movements")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50),
+  ]);
 
   const otherProfiles = (profiles ?? []).filter((p) => p.id !== profile.id);
   const otherProfileIds = new Set(otherProfiles.map((p) => p.id));
@@ -89,7 +99,16 @@ export default async function InventarioPage({
     return { stock: row?.stock ?? 0, threshold: row?.min_stock ?? threshold };
   }
 
-  const groups: StockGroup[] = (products ?? []).map((p) => ({
+  // Filtro de categoría/línea (ver InventarioFilters) — mismo criterio
+  // que Catálogo: se aplica sobre la lista de productos antes de armar
+  // los grupos, así "Generar PDF" y la tabla siempre muestran lo mismo.
+  const productsFiltered = (products ?? []).filter((p) => {
+    if (categoria && p.category_id !== categoria) return false;
+    if (linea && p.line_id !== linea) return false;
+    return true;
+  });
+
+  const groups: StockGroup[] = productsFiltered.map((p) => ({
     productId: p.id,
     productName: p.name,
     category: p.category_id ? (categoryById.get(p.category_id) ?? null) : null,
@@ -106,6 +125,13 @@ export default async function InventarioPage({
     { value: "todo", label: "Todo el negocio" },
   ];
 
+  // Los tabs de vista y el link de "Generar PDF" heredan el filtro de
+  // categoría/línea activo, para no perderlo al cambiar de pestaña.
+  const filterQuery = new URLSearchParams();
+  if (categoria) filterQuery.set("categoria", categoria);
+  if (linea) filterQuery.set("linea", linea);
+  const filterQueryString = filterQuery.toString();
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -115,19 +141,38 @@ export default async function InventarioPage({
 
       <InventarioTabs active="stock" />
 
-      <div className="flex w-fit flex-wrap gap-1 rounded-full border border-gold/20 bg-panel/30 p-1">
-        {tabs.map((tab) => (
-          <Link
-            key={tab.value}
-            href={`/inventario?vista=${tab.value}`}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
-              vista === tab.value ? "bg-primary text-background" : "text-ink/60 hover:text-ink",
-            )}
-          >
-            {tab.label}
-          </Link>
-        ))}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex w-fit flex-wrap gap-1 rounded-full border border-gold/20 bg-panel/30 p-1">
+            {tabs.map((tab) => (
+              <Link
+                key={tab.value}
+                href={`/inventario?vista=${tab.value}${filterQueryString ? `&${filterQueryString}` : ""}`}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                  vista === tab.value ? "bg-primary text-background" : "text-ink/60 hover:text-ink",
+                )}
+              >
+                {tab.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Solo en "Mi stock": es el único número que le pertenece de
+              verdad a quien está mirando la pantalla — ver el mismo
+              razonamiento que ya limita el stepper de ajuste acá abajo. */}
+          {vista === "mio" && (
+            <Link
+              href={`/imprimir/inventario${filterQueryString ? `?${filterQueryString}` : ""}`}
+              target="_blank"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gold/40 px-3 py-2 text-sm font-medium text-ink hover:bg-gold/10"
+            >
+              <FileText className="h-4 w-4" /> Generar PDF
+            </Link>
+          )}
+        </div>
+
+        <InventarioFilters categories={categories ?? []} lines={lines ?? []} />
       </div>
 
       <Card className="p-0">
