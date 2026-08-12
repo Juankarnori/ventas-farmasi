@@ -93,9 +93,11 @@ export function PersonalUseForm({
 
   // Igual que en Catálogo/Pedidos/Ventas/Préstamos: las opciones del
   // select son la lista filtrada, más el producto ya elegido si el
-  // filtro cambió después y ya no lo incluye.
+  // filtro cambió después y ya no lo incluye — excepto con una búsqueda
+  // de texto activa, ahí siempre se respeta la lista filtrada tal cual
+  // (ver bug/fix en SaleLineItems).
   const productOptions =
-    filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId)
+    filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId) || query.trim()
       ? filteredProducts
       : selectedProduct
         ? [selectedProduct, ...filteredProducts]

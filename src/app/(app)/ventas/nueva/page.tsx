@@ -16,7 +16,11 @@ export default async function NuevaVentaPage() {
         .order("name", { ascending: true }),
       supabase
         .from("product_variants")
-        .select("id, product_id, color_name, price_override, sku")
+        // `stock` acá ya es el total del negocio (espejo por trigger de la
+        // suma de variant_stock de todas las usuarias, ver
+        // 0015_per_user_stock.sql) — se guarda como totalStock antes de
+        // pisarlo con el stock propio de abajo.
+        .select("id, product_id, color_name, price_override, sku, stock")
         .order("color_name", { ascending: true }),
       supabase.from("variant_stock").select("variant_id, stock").eq("profile_id", profile.id),
       supabase.from("categories").select("id, name").order("sort_order", { ascending: true }),
@@ -27,6 +31,7 @@ export default async function NuevaVentaPage() {
   const myStockByVariant = new Map((myStock ?? []).map((s) => [s.variant_id, s.stock]));
   const variantsWithStock = (variants ?? []).map((v) => ({
     ...v,
+    totalStock: v.stock,
     stock: myStockByVariant.get(v.id) ?? 0,
   }));
 

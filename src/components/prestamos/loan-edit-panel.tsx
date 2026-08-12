@@ -140,8 +140,12 @@ export function LoanEditPanel({
           customPrice: null,
         });
 
+  // Misma excepción que en LoanForm: la selección actual solo se
+  // "pega" a la lista filtrada cuando lo que la sacó fue el filtro de
+  // categoría/línea, nunca con una búsqueda de texto activa (ver
+  // bug/fix en SaleLineItems).
   const productOptions =
-    filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId)
+    filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId) || query.trim()
       ? filteredProducts
       : selectedProduct
         ? [selectedProduct, ...filteredProducts]

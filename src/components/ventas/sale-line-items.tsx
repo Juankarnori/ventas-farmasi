@@ -9,11 +9,17 @@ import { CategoryLineFilter } from "@/components/shared/category-line-filter";
 import { QuickAddByCode } from "@/components/shared/quick-add-by-code";
 import { filterProducts } from "@/lib/utils/product-search";
 import { BorrowStockDialog } from "./borrow-stock-dialog";
+import { CreateOrderLink } from "./create-order-link";
 
 export interface SellableVariant {
   id: string;
   color_name: string;
   stock: number;
+  // Total del negocio (todas las usuarias sumadas) para esta variante —
+  // no solo lo que tiene la vendedora. Cuando esto es 0, nadie en el
+  // equipo tiene stock: "Pedir prestado" no serviría de nada, así que se
+  // ofrece "Crear pedido" en su lugar (ver overStock más abajo).
+  totalStock: number;
   price_override: number | null;
   sku: string | null;
 }
@@ -94,10 +100,19 @@ export function SaleLineItems({
   }
 
   // Las opciones del select de un renglón son la lista filtrada, más su
-  // propio producto ya elegido si el filtro cambió después y ya no lo
-  // incluye (para no romper una fila que ya estaba armada).
+  // propio producto ya elegido si el filtro de categoría/línea cambió
+  // después y ya no lo incluye (para no romper una fila que ya estaba
+  // armada). Esa excepción NUNCA aplica si hay una búsqueda de texto
+  // activa: ahí la lista tiene que quedar filtrada tal cual, sin mezclar
+  // el producto ya elegido si no matchea lo que se está escribiendo —
+  // antes esto hacía que la búsqueda pareciera no filtrar nada, porque
+  // el producto ya seleccionado (casi nunca el que se está buscando)
+  // siempre volvía a aparecer en la lista.
   function optionsFor(productId: string) {
     if (filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId)) {
+      return filteredProducts;
+    }
+    if (query.trim()) {
       return filteredProducts;
     }
     const current = productById.get(productId);
@@ -274,11 +289,25 @@ export function SaleLineItems({
                   <AlertTriangle className="h-3.5 w-3.5 text-accent" /> Solo tenés {variant?.stock} de
                   stock propio de este color.
                 </p>
-                <BorrowStockDialog
-                  variantId={row.variant_id}
-                  missingQuantity={row.quantity - (variant?.stock ?? 0)}
-                  onBorrowed={(added) => bumpStock(row.variant_id, added)}
-                />
+                {variant && variant.totalStock === 0 ? (
+                  <>
+                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink">
+                      <AlertTriangle className="h-3.5 w-3.5 text-accent" /> No hay stock de este
+                      producto en todo el negocio.
+                    </p>
+                    <CreateOrderLink
+                      productId={row.product_id}
+                      variantId={row.variant_id}
+                      quantity={row.quantity - (variant?.stock ?? 0)}
+                    />
+                  </>
+                ) : (
+                  <BorrowStockDialog
+                    variantId={row.variant_id}
+                    missingQuantity={row.quantity - (variant?.stock ?? 0)}
+                    onBorrowed={(added) => bumpStock(row.variant_id, added)}
+                  />
+                )}
               </div>
             )}
           </div>

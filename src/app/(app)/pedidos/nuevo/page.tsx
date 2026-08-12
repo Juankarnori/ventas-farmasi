@@ -2,9 +2,19 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { OrderForm } from "@/components/pedidos/order-form";
+import type { OrderItemDefault } from "@/components/pedidos/order-items-editor";
 import { createOrder } from "../actions";
 
-export default async function NuevoPedidoPage() {
+export default async function NuevoPedidoPage({
+  searchParams,
+}: {
+  // Llegan cuando se viene desde "Crear pedido" en una venta que se quedó
+  // sin stock de este producto en todo el negocio (ver CreateOrderLink en
+  // SaleLineItems) — precargan el renglón para no tener que rebuscar el
+  // producto de nuevo.
+  searchParams: Promise<{ product_id?: string; variant_id?: string; quantity?: string }>;
+}) {
+  const { product_id, variant_id, quantity } = await searchParams;
   const supabase = await createClient();
   const [{ data: products }, { data: variants }, { data: categories }, { data: lines }] = await Promise.all([
     supabase
@@ -30,6 +40,22 @@ export default async function NuevoPedidoPage() {
     .map((p) => ({ ...p, variants: variantsByProduct.get(p.id) ?? [] }))
     .filter((p) => p.variants.length > 0);
 
+  let defaultItems: OrderItemDefault[] | undefined;
+  if (product_id && variant_id) {
+    const product = orderableProducts.find((p) => p.id === product_id);
+    const variant = product?.variants.find((v) => v.id === variant_id);
+    if (product && variant) {
+      defaultItems = [
+        {
+          product_id,
+          variant_id,
+          quantity: Math.max(1, Number(quantity) || 1),
+          unit_cost: variant.cost_override ?? product.cost_price,
+        },
+      ];
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <Link
@@ -44,6 +70,7 @@ export default async function NuevoPedidoPage() {
         categories={categories ?? []}
         lines={lines ?? []}
         action={createOrder}
+        defaultItems={defaultItems}
       />
     </div>
   );

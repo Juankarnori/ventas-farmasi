@@ -71,8 +71,17 @@ export function OrderItemsEditor({
     setFilterLineId("");
   }
 
+  // Las opciones del select de un renglón son la lista filtrada, más su
+  // propio producto ya elegido si el filtro de categoría/línea cambió
+  // después y ya no lo incluye (para no romper una fila que ya estaba
+  // armada). Esa excepción NUNCA aplica si hay una búsqueda de texto
+  // activa: ahí la lista tiene que quedar filtrada tal cual (ver mismo
+  // bug/fix en SaleLineItems).
   function optionsFor(productId: string) {
     if (filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId)) {
+      return filteredProducts;
+    }
+    if (query.trim()) {
       return filteredProducts;
     }
     const current = productById.get(productId);

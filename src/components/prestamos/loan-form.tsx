@@ -86,9 +86,12 @@ export function LoanForm({
 
   // Igual que en Pedidos/Ventas: las opciones del select son la lista
   // filtrada, más el producto ya elegido si el filtro cambió después y ya
-  // no lo incluye (para no romper la selección actual).
+  // no lo incluye (para no romper la selección actual) — pero esa
+  // excepción nunca aplica con una búsqueda de texto activa, porque ahí
+  // el producto ya elegido casi nunca matchea lo que se está buscando y
+  // reaparecía tapando el resultado real (mismo bug/fix que SaleLineItems).
   const productOptions =
-    filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId)
+    filteredProducts.length === 0 || filteredProducts.some((p) => p.id === productId) || query.trim()
       ? filteredProducts
       : selectedProduct
         ? [selectedProduct, ...filteredProducts]
