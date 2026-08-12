@@ -6,6 +6,7 @@ import { Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { OrderStatusBadge } from "@/components/pedidos/order-status-badge";
+import { PedidosTabs } from "@/components/pedidos/pedidos-tabs";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 
@@ -39,6 +40,10 @@ export default async function PedidosPage() {
             <Plus className="h-4 w-4" /> Nuevo pedido
           </Button>
         </Link>
+      </div>
+
+      <div className="mt-4">
+        <PedidosTabs active="pedidos" />
       </div>
 
       <div className="mt-6">

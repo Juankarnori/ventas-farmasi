@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VentasTabs } from "@/components/ventas/ventas-tabs";
 import { ApartadoCard, type ApartadoCardData } from "@/components/ventas/apartado-card";
+import { variantLabel } from "@/lib/utils/variant-label";
 
 export default async function ApartadosPage() {
   const supabase = await createClient();
@@ -20,22 +21,48 @@ export default async function ApartadosPage() {
 
   const saleIds = (sales ?? []).map((s) => s.id);
 
-  const [{ data: balances }, { data: items }] = await Promise.all([
+  const [{ data: balances }, { data: items }, { data: products }, { data: variants }] = await Promise.all([
     saleIds.length > 0
       ? supabase.from("sale_balances").select("*").in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
     saleIds.length > 0
-      ? supabase.from("sale_items").select("sale_id, delivered").in("sale_id", saleIds)
+      ? supabase
+          .from("sale_items")
+          .select("sale_id, delivered, product_id, variant_id, pending_purchase_quantity")
+          .in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
+    supabase.from("products").select("id, name"),
+    supabase.from("product_variants").select("id, product_id, color_name"),
   ]);
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
   const balanceBySale = new Map((balances ?? []).map((b) => [b.sale_id, b]));
+  const productById = new Map((products ?? []).map((p) => [p.id, p]));
+  const variantById = new Map((variants ?? []).map((v) => [v.id, v]));
+
+  function labelFor(item: { product_id: string; variant_id: string }) {
+    const productName = productById.get(item.product_id)?.name ?? "—";
+    const colorName = variantById.get(item.variant_id)?.color_name;
+    return colorName ? variantLabel(productName, colorName) : productName;
+  }
 
   const deliveredBySale = new Map<string, boolean>();
+  // Igual que en Ventas: agrupa por variante por si el mismo color quedó
+  // en más de un renglón — el aviso "⏳ Pendiente de comprar" en la
+  // tarjeta muestra un total por producto, no un renglón por renglón que
+  // podría duplicar el mismo nombre.
+  const pendingBySale = new Map<string, Map<string, { label: string; quantity: number }>>();
   for (const item of items ?? []) {
     const current = deliveredBySale.get(item.sale_id) ?? true;
     deliveredBySale.set(item.sale_id, current && item.delivered);
+
+    if (item.pending_purchase_quantity > 0) {
+      const saleMap = pendingBySale.get(item.sale_id) ?? new Map();
+      const entry = saleMap.get(item.variant_id) ?? { label: labelFor(item), quantity: 0 };
+      entry.quantity += item.pending_purchase_quantity;
+      saleMap.set(item.variant_id, entry);
+      pendingBySale.set(item.sale_id, saleMap);
+    }
   }
 
   const apartados: ApartadoCardData[] = (sales ?? [])
@@ -59,6 +86,7 @@ export default async function ApartadosPage() {
         allDelivered: deliveredBySale.get(s.id) ?? true,
         paymentMethod: s.payment_method,
         bankNote: s.bank_note,
+        pendingItems: Array.from((pendingBySale.get(s.id) ?? new Map()).values()),
       };
     });
 

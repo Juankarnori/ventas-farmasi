@@ -342,6 +342,11 @@ export interface Database {
           cost_price: number;
           profit: number;
           delivered: boolean;
+          // Cuánto de `quantity` no se pudo descontar del stock al
+          // momento de vender, porque no había suficiente (ni propio ni
+          // de nadie del equipo) — ver create_sale/create_apartado y
+          // list_purchase_needed().
+          pending_purchase_quantity: number;
         };
         Insert: Partial<Database["public"]["Tables"]["sale_items"]["Row"]> & {
           sale_id: string;
@@ -655,6 +660,18 @@ export interface Database {
       delete_sale: {
         Args: { p_sale_id: string };
         Returns: void;
+      };
+      list_purchase_needed: {
+        Args: Record<string, never>;
+        Returns: {
+          variant_id: string;
+          product_id: string;
+          product_name: string;
+          color_name: string;
+          sku: string | null;
+          quantity_needed: number;
+          oldest_pending_since: string;
+        }[];
       };
       update_apartado_items: {
         Args: {

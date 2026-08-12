@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { DeleteSaleButton } from "./delete-sale-button";
+import { PendingPurchaseNotice } from "@/components/shared/pending-purchase-notice";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import type { PaymentMethod, PaymentStatus } from "@/lib/types/database.types";
@@ -17,6 +18,9 @@ export interface ApartadoCardData {
   allDelivered: boolean;
   paymentMethod: PaymentMethod;
   bankNote: string | null;
+  // Renglones que se completaron sin stock suficiente (ver
+  // pending_purchase_quantity) — vacío la mayoría de las veces.
+  pendingItems: { label: string; quantity: number }[];
 }
 
 // Ya no es un <Link> envolviendo toda la tarjeta: DeleteSaleButton
@@ -65,6 +69,8 @@ export function ApartadoCard({ apartado }: { apartado: ApartadoCardData }) {
         {apartado.paymentMethod === "transferencia" ? "🏦 Transferencia" : "💵 Efectivo"}
         {apartado.bankNote && ` (${apartado.bankNote})`}
       </p>
+
+      <PendingPurchaseNotice items={apartado.pendingItems} />
 
       <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
         <div>

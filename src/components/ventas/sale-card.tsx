@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DeleteSaleButton } from "./delete-sale-button";
+import { PendingPurchaseNotice } from "@/components/shared/pending-purchase-notice";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import type { PaymentMethod, PaymentStatus } from "@/lib/types/database.types";
@@ -22,6 +23,9 @@ export interface SaleCardData {
   // con abonos, aunque ya esté 'completado'. Lo único que necesita
   // DeleteSaleButton para decidir qué advertencia mostrar.
   paidAmount: number;
+  // Renglones que se completaron sin stock suficiente (ver
+  // pending_purchase_quantity) — vacío la mayoría de las veces.
+  pendingItems: { label: string; quantity: number }[];
 }
 
 // Mismo lenguaje visual que ApartadoCard (tamaño, bordes, tipografía,
@@ -68,6 +72,8 @@ export function SaleCard({ sale }: { sale: SaleCardData }) {
         </Badge>
         {sale.bankNote && <span className="text-xs text-ink/50">{sale.bankNote}</span>}
       </div>
+
+      <PendingPurchaseNotice items={sale.pendingItems} />
 
       <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
         <div>

@@ -96,12 +96,19 @@ export default async function VentasPage({
         // renglón (no debería pasar desde el formulario, pero no cuesta
         // nada ser robusto acá igual que en la ficha de cliente).
         const productMap = new Map<string, { label: string; quantity: number }>();
+        const pendingMap = new Map<string, { label: string; quantity: number }>();
         let saleProfit = 0;
         for (const item of saleItems) {
           const entry = productMap.get(item.variant_id) ?? { label: labelFor(item), quantity: 0 };
           entry.quantity += item.quantity;
           productMap.set(item.variant_id, entry);
           saleProfit += item.profit;
+
+          if (item.pending_purchase_quantity > 0) {
+            const pendingEntry = pendingMap.get(item.variant_id) ?? { label: labelFor(item), quantity: 0 };
+            pendingEntry.quantity += item.pending_purchase_quantity;
+            pendingMap.set(item.variant_id, pendingEntry);
+          }
         }
 
         return {
@@ -124,6 +131,7 @@ export default async function VentasPage({
           paymentMethod: s.payment_method,
           bankNote: s.bank_note,
           paidAmount: balanceBySale.get(s.id) ?? 0,
+          pendingItems: Array.from(pendingMap.values()),
         } satisfies SaleCardData;
       })
       .sort((a, b) => (a.saleDate < b.saleDate ? 1 : -1));

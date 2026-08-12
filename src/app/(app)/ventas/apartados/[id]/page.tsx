@@ -15,6 +15,7 @@ import { PaymentMethodEditor } from "@/components/ventas/payment-method-editor";
 import { ApartadoCustomerEditor } from "@/components/ventas/apartado-customer-editor";
 import { ApartadoItemsEditPanel, type ApartadoItemDisplayRow } from "@/components/ventas/apartado-items-edit-panel";
 import type { SellableProduct, SaleItemDefault } from "@/components/ventas/sale-line-items";
+import { PendingPurchaseNotice } from "@/components/shared/pending-purchase-notice";
 import {
   markItemDelivered,
   updateSalePaymentMethod,
@@ -164,6 +165,16 @@ export default async function ApartadoDetallePage({
   const updateItemsAction = updateApartadoItems.bind(null, sale.id);
   const updateCustomerAction = updateApartadoCustomer.bind(null, sale.id);
 
+  const pendingMap = new Map<string, { label: string; quantity: number }>();
+  for (const item of items ?? []) {
+    if (item.pending_purchase_quantity > 0) {
+      const entry = pendingMap.get(item.variant_id) ?? { label: labelFor(item), quantity: 0 };
+      entry.quantity += item.pending_purchase_quantity;
+      pendingMap.set(item.variant_id, entry);
+    }
+  }
+  const pendingItems = Array.from(pendingMap.values());
+
   return (
     <div className="mx-auto max-w-2xl">
       <Link
@@ -190,6 +201,7 @@ export default async function ApartadoDetallePage({
               action={updateSalePaymentMethod.bind(null, sale.id)}
             />
           </div>
+          <PendingPurchaseNotice items={pendingItems} />
         </div>
         <Badge
           variant={

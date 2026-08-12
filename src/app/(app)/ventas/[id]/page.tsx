@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SaleEditPanel, type SaleDisplayRow } from "@/components/ventas/sale-edit-panel";
 import type { SellableProduct, SaleItemDefault } from "@/components/ventas/sale-line-items";
+import { PendingPurchaseNotice } from "@/components/shared/pending-purchase-notice";
 import { variantLabel } from "@/lib/utils/variant-label";
 import { formatDate } from "@/lib/utils/date";
 import { updateSaleItems } from "../actions";
@@ -116,6 +117,16 @@ export default async function VentaDetallePage({
   const isEditable = sale.payment_status === "pagado";
   const updateAction = updateSaleItems.bind(null, sale.id);
 
+  const pendingMap = new Map<string, { label: string; quantity: number }>();
+  for (const item of items ?? []) {
+    if (item.pending_purchase_quantity > 0) {
+      const entry = pendingMap.get(item.variant_id) ?? { label: labelFor(item), quantity: 0 };
+      entry.quantity += item.pending_purchase_quantity;
+      pendingMap.set(item.variant_id, entry);
+    }
+  }
+  const pendingItems = Array.from(pendingMap.values());
+
   return (
     <div className="mx-auto max-w-2xl">
       <Link
@@ -132,6 +143,7 @@ export default async function VentaDetallePage({
         <p className="mt-1 text-sm text-ink/60">
           {formatDate(sale.sale_date)} · {seller?.display_name ?? "—"}
         </p>
+        <PendingPurchaseNotice items={pendingItems} />
       </div>
 
       {isEditable ? (

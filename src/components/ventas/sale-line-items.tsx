@@ -9,7 +9,7 @@ import { CategoryLineFilter } from "@/components/shared/category-line-filter";
 import { QuickAddByCode } from "@/components/shared/quick-add-by-code";
 import { filterProducts } from "@/lib/utils/product-search";
 import { BorrowStockDialog } from "./borrow-stock-dialog";
-import { CreateOrderLink } from "./create-order-link";
+import { CreateOrderLink } from "@/components/shared/create-order-link";
 
 export interface SellableVariant {
   id: string;
@@ -289,6 +289,15 @@ export function SaleLineItems({
                   <AlertTriangle className="h-3.5 w-3.5 text-accent" /> Solo tenés {variant?.stock} de
                   stock propio de este color.
                 </p>
+                {/* Ya no bloquea la venta (ver create_sale/create_apartado en
+                    0046_pending_purchase.sql): si se completa igual sin pedir
+                    prestado ni ajustar la cantidad, la diferencia queda
+                    registrada como pendiente de comprar en este mismo
+                    renglón — se puede resolver ahora (pidiendo prestado) o
+                    más tarde (recibiendo un pedido de este producto). */}
+                <p className="mt-1 text-xs text-ink/50">
+                  Podés completar la venta igual — la diferencia queda pendiente de comprar.
+                </p>
                 {variant && variant.totalStock === 0 ? (
                   <>
                     <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink">
@@ -299,6 +308,7 @@ export function SaleLineItems({
                       productId={row.product_id}
                       variantId={row.variant_id}
                       quantity={row.quantity - (variant?.stock ?? 0)}
+                      className="mt-1.5"
                     />
                   </>
                 ) : (
