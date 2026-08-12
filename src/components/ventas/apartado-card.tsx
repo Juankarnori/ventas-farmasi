@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { DeleteSaleButton } from "./delete-sale-button";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import type { PaymentMethod, PaymentStatus } from "@/lib/types/database.types";
@@ -18,6 +19,12 @@ export interface ApartadoCardData {
   bankNote: string | null;
 }
 
+// Ya no es un <Link> envolviendo toda la tarjeta: DeleteSaleButton
+// necesita su propio botón con Dialog, y un botón interactivo anidado
+// dentro de un <a> es HTML inválido / click ambiguo — mismo patrón
+// "stretched link" que ya se usa en CustomerCard/ProspectCard: un <Link>
+// absoluto de fondo cubre toda la tarjeta, el botón de eliminar queda
+// por encima con más z-index para interceptar su propio click primero.
 export function ApartadoCard({ apartado }: { apartado: ApartadoCardData }) {
   const percent =
     apartado.total > 0 ? Math.min(100, Math.round((apartado.paid / apartado.total) * 100)) : 0;
@@ -34,13 +41,24 @@ export function ApartadoCard({ apartado }: { apartado: ApartadoCardData }) {
   }
 
   return (
-    <Link
-      href={`/ventas/apartados/${apartado.id}`}
-      className="block rounded-2xl border border-gold/20 bg-panel/40 p-4 shadow-sm transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-    >
+    <div className="relative rounded-2xl border border-gold/20 bg-panel/40 p-4 shadow-sm transition-shadow hover:shadow-md">
+      <Link
+        href={`/ventas/apartados/${apartado.id}`}
+        aria-label={`Ver apartado de ${apartado.customerName}`}
+        className="absolute inset-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+      />
+
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium text-ink">{apartado.customerName}</p>
-        <Badge variant={badgeVariant}>{badgeLabel}</Badge>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Badge variant={badgeVariant}>{badgeLabel}</Badge>
+          <DeleteSaleButton
+            saleId={apartado.id}
+            paidAmount={apartado.paid}
+            compact
+            className="relative z-10 rounded-full p-1 text-ink/40 hover:bg-accent/20 hover:text-ink"
+          />
+        </div>
       </div>
       <p className="mt-1 text-xs text-ink/50">
         {formatDate(apartado.saleDate)} · {apartado.sellerName} ·{" "}
@@ -80,6 +98,6 @@ export function ApartadoCard({ apartado }: { apartado: ApartadoCardData }) {
           <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
         </div>
       )}
-    </Link>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { DeleteSaleButton } from "./delete-sale-button";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import type { PaymentMethod, PaymentStatus } from "@/lib/types/database.types";
@@ -16,6 +17,11 @@ export interface SaleCardData {
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
   bankNote: string | null;
+  // Suma de sale_payments — 0 para una venta de contado normal (esas
+  // nunca pasan por ahí); >0 solo si esta venta llegó a ser un apartado
+  // con abonos, aunque ya esté 'completado'. Lo único que necesita
+  // DeleteSaleButton para decidir qué advertencia mostrar.
+  paidAmount: number;
 }
 
 // Mismo lenguaje visual que ApartadoCard (tamaño, bordes, tipografía,
@@ -34,12 +40,15 @@ export function SaleCard({ sale }: { sale: SaleCardData }) {
     <div className="rounded-2xl border border-gold/20 bg-panel/40 p-4 shadow-sm">
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium text-ink">{sale.customerName ?? "Venta de mostrador"}</p>
-        <Link
-          href={editHref}
-          className="flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
-        >
-          <Pencil className="h-3.5 w-3.5" /> Editar
-        </Link>
+        <div className="flex shrink-0 items-center gap-1">
+          <Link
+            href={editHref}
+            className="flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Editar
+          </Link>
+          <DeleteSaleButton saleId={sale.id} paidAmount={sale.paidAmount} />
+        </div>
       </div>
       <p className="mt-1 text-xs text-ink/50">
         {formatDate(sale.saleDate)} · {sale.sellerName}

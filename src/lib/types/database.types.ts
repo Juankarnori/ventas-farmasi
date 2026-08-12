@@ -652,6 +652,10 @@ export interface Database {
         Args: { p_sale_id: string; p_payment_method: PaymentMethod; p_bank_note?: string | null };
         Returns: void;
       };
+      delete_sale: {
+        Args: { p_sale_id: string };
+        Returns: void;
+      };
       update_apartado_items: {
         Args: {
           p_sale_id: string;

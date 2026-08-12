@@ -53,10 +53,15 @@ export default async function VentasPage({
     // calificó muestra la venta completa — todos sus productos, el total
     // y la ganancia reales —, no un recorte parcial que dejaría el total
     // sin cuadrar con lo que se ve adentro.
-    const [{ data: items }, { data: variants }, { data: customers }] = await Promise.all([
+    const [{ data: items }, { data: variants }, { data: customers }, { data: balances }] = await Promise.all([
       supabase.from("sale_items").select("*").in("sale_id", saleIds),
       supabase.from("product_variants").select("id, product_id, color_name"),
       supabase.from("customers").select("id, name"),
+      // Solo para DeleteSaleButton: cuánto tiene abonado por
+      // sale_payments (0 para una venta de contado normal, que nunca
+      // pasa por ahí) — así el aviso de "se pierde el registro de ese
+      // dinero" solo aparece cuando de verdad aplica.
+      supabase.from("sale_balances").select("sale_id, amount_paid").in("sale_id", saleIds),
     ]);
 
     const qualifyingSaleIds = producto
@@ -67,6 +72,7 @@ export default async function VentasPage({
     const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
     const variantById = new Map((variants ?? []).map((v) => [v.id, v]));
     const customerById = new Map((customers ?? []).map((c) => [c.id, c]));
+    const balanceBySale = new Map((balances ?? []).map((b) => [b.sale_id, b.amount_paid]));
 
     function labelFor(item: { product_id: string; variant_id: string }) {
       const productName = productById.get(item.product_id)?.name ?? "—";
@@ -117,6 +123,7 @@ export default async function VentasPage({
           paymentStatus: s.payment_status,
           paymentMethod: s.payment_method,
           bankNote: s.bank_note,
+          paidAmount: balanceBySale.get(s.id) ?? 0,
         } satisfies SaleCardData;
       })
       .sort((a, b) => (a.saleDate < b.saleDate ? 1 : -1));

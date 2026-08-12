@@ -353,3 +353,29 @@ export async function cancelApartado(saleId: string): Promise<{ error?: string }
   revalidatePath("/catalogo");
   redirect("/ventas/apartados");
 }
+
+// Elimina una venta ya registrada (de contado o apartado) por completo —
+// revierte el stock, borra las follow_up_tasks que haya generado, y la
+// venta (con sale_items/sale_payments en cascada). Se llama directo
+// desde la tarjeta en el listado (no una página de detalle), así que acá
+// no redirige — solo revalida para que la tarjeta desaparezca con datos
+// frescos.
+export async function deleteSale(saleId: string): Promise<{ error?: string }> {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("delete_sale", { p_sale_id: saleId });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/ventas");
+  revalidatePath("/ventas/apartados");
+  revalidatePath("/inventario");
+  revalidatePath("/catalogo");
+  revalidatePath("/clientes");
+  revalidatePath("/finanzas");
+  revalidatePath("/");
+  return {};
+}
