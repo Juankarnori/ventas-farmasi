@@ -65,6 +65,7 @@ export default async function ProspectoDetallePage({ params }: { params: Promise
           phone={prospect.phone}
           type={prospect.type}
           note={prospect.note}
+          firstContactDate={prospect.first_contact_date}
         />
       </Card>
 

@@ -11,6 +11,7 @@ export interface ProspectDefaults {
   phone: string | null;
   type: ProspectType;
   note: string | null;
+  firstContactDate: string | null;
 }
 
 // Alta/edición de un prospecto — mismo patrón que FollowUpRuleForm: sin
@@ -62,6 +63,15 @@ export function ProspectForm({
             <option value="venta">Venta (interesada en comprar)</option>
             <option value="ingreso">Ingreso (interesada en sumarse)</option>
           </Select>
+        </div>
+        <div className="w-48">
+          <Label htmlFor="first_contact_date">Primer contacto (opcional)</Label>
+          <Input
+            id="first_contact_date"
+            name="first_contact_date"
+            type="date"
+            defaultValue={defaults?.firstContactDate ?? ""}
+          />
         </div>
       </div>
 

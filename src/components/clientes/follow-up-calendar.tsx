@@ -13,7 +13,9 @@ import {
   getDate,
 } from "date-fns";
 import { es } from "date-fns/locale";
+import { UserPlus } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/input";
 import { WhatsAppButton } from "@/components/shared/whatsapp-button";
 import { cn } from "@/lib/utils/cn";
@@ -181,7 +183,14 @@ function FollowUpDetailCard({ entry }: { entry: CalendarFollowUpEntry }) {
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-gold/20 bg-surface p-3 text-sm">
       <div className="flex items-center justify-between gap-2">
-        <p className="font-medium text-ink">{entry.customerName}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="font-medium text-ink">{entry.contactName}</p>
+          {entry.isProspect && (
+            <Badge variant="accent" className="gap-1">
+              <UserPlus className="h-3 w-3" /> Prospecto
+            </Badge>
+          )}
+        </div>
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-[11px] font-medium",
@@ -198,10 +207,10 @@ function FollowUpDetailCard({ entry }: { entry: CalendarFollowUpEntry }) {
       {canMessage ? (
         <>
           <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} className="text-xs" />
-          {!entry.customerPhone && (
+          {!entry.contactPhone && (
             <p className="text-[11px] text-ink/50">Sin teléfono — no se puede abrir WhatsApp.</p>
           )}
-          <WhatsAppButton phone={entry.customerPhone} message={message} />
+          <WhatsAppButton phone={entry.contactPhone} message={message} />
         </>
       ) : (
         <p className="text-xs text-ink/60">

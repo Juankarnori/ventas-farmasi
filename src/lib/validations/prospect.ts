@@ -5,6 +5,9 @@ export const prospectSchema = z.object({
   phone: z.string().trim().optional().or(z.literal("")),
   type: z.enum(["ingreso", "venta"], { message: "Elegí un tipo" }),
   note: z.string().trim().optional().or(z.literal("")),
+  // Opcional: no siempre se recuerda o se quiere cargar la fecha exacta
+  // del primer contacto.
+  first_contact_date: z.string().trim().optional().or(z.literal("")),
 });
 
 export type ProspectInput = z.infer<typeof prospectSchema>;

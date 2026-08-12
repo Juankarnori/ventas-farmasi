@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { UserPlus } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/date";
 import type { PendingFollowUp } from "@/lib/queries/pending-follow-ups";
 
@@ -22,12 +24,19 @@ export function PendingFollowUpsCard({ tasks, previewCount = 5 }: { tasks: Pendi
       ) : (
         <>
           <p className="px-5 pb-2 text-xs text-ink/60">
-            {tasks.length} clienta{tasks.length === 1 ? "" : "s"} esperando contacto.
+            {tasks.length} contacto{tasks.length === 1 ? "" : "s"} esperando.
           </p>
           <ul className="flex flex-col divide-y divide-ink/10 pb-2">
             {preview.map((t) => (
               <li key={t.id} className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm">
-                <span className="text-ink">{t.customerName}</span>
+                <span className="flex items-center gap-1.5 text-ink">
+                  {t.contactName}
+                  {t.isProspect && (
+                    <Badge variant="accent" className="gap-1">
+                      <UserPlus className="h-3 w-3" /> Prospecto
+                    </Badge>
+                  )}
+                </span>
                 <span className="whitespace-nowrap text-xs text-ink/50">Vence {formatDate(t.dueDate)}</span>
               </li>
             ))}

@@ -63,6 +63,10 @@ export async function updateOrder(orderId: string, formData: FormData): Promise<
     return { error: "Pedido no encontrado." };
   }
 
+  if (order.status === "cancelado") {
+    return { error: "Este pedido está cancelado — no se puede editar." };
+  }
+
   if (order.status !== "pendiente") {
     return {
       error:
@@ -151,6 +155,24 @@ export async function markOrderReceived(orderId: string): Promise<{ error?: stri
   revalidatePath("/pedidos");
   revalidatePath("/inventario");
   revalidatePath("/catalogo");
+  revalidatePath(`/pedidos/${orderId}`);
+  return {};
+}
+
+// Solo mientras está pendiente — ver cancel_order. Un pedido pendiente
+// todavía no sumó nada de stock (eso pasa recién al marcarlo recibido),
+// así que cancelarlo no revierte nada.
+export async function cancelOrder(orderId: string): Promise<{ error?: string }> {
+  await getSessionProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("cancel_order", { p_order_id: orderId });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/pedidos");
   revalidatePath(`/pedidos/${orderId}`);
   return {};
 }

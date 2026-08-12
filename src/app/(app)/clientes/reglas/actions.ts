@@ -38,9 +38,10 @@ export async function createFollowUpRule(formData: FormData): Promise<{ error?: 
       name: data.name,
       trigger_type: data.trigger_type,
       // El check constraint de la tabla exige days_after null para
-      // 'cumpleanos' — se fuerza acá para no depender de que el form
+      // 'cumpleanos' (para 'despues_de_venta'/'despues_de_contacto' sí
+      // hace falta) — se fuerza acá para no depender de que el form
       // nunca mande un valor sobrante.
-      days_after: data.trigger_type === "despues_de_venta" ? (data.days_after ?? null) : null,
+      days_after: data.trigger_type !== "cumpleanos" ? (data.days_after ?? null) : null,
       message_template: data.message_template,
       created_by: profile.id,
     });
@@ -73,7 +74,7 @@ export async function updateFollowUpRule(ruleId: string, formData: FormData): Pr
       .update({
         name: data.name,
         trigger_type: data.trigger_type,
-        days_after: data.trigger_type === "despues_de_venta" ? (data.days_after ?? null) : null,
+        days_after: data.trigger_type !== "cumpleanos" ? (data.days_after ?? null) : null,
         message_template: data.message_template,
       })
       .eq("id", ruleId);

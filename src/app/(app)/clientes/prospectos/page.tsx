@@ -34,6 +34,7 @@ export default async function ProspectosPage() {
     type: p.type,
     status: p.status,
     note: p.note,
+    firstContactDate: p.first_contact_date,
     nextAppointment: nextAppointmentByProspect.get(p.id) ?? null,
   }));
 

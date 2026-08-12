@@ -12,6 +12,15 @@ import type { Database } from "@/lib/types/database.types";
 
 type FollowUpRule = Database["public"]["Tables"]["follow_up_rules"]["Row"];
 
+// A qué le aplica cada regla — para que Ventas y Prospectos nunca se
+// mezclen visualmente en la lista (cumpleanos/despues_de_venta son de
+// Clientes que ya compraron; despues_de_contacto es de Prospectos).
+const GROUP_LABEL = {
+  despues_de_venta: "Ventas",
+  cumpleanos: "Ventas",
+  despues_de_contacto: "Prospectos",
+} as const;
+
 export function FollowUpRuleRow({ rule }: { rule: FollowUpRule }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -55,10 +64,15 @@ export function FollowUpRuleRow({ rule }: { rule: FollowUpRule }) {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-medium text-ink">{rule.name}</p>
+            <Badge variant={rule.trigger_type === "despues_de_contacto" ? "accent" : "neutral"}>
+              {GROUP_LABEL[rule.trigger_type]}
+            </Badge>
             <Badge variant={rule.trigger_type === "cumpleanos" ? "gold" : "sage"}>
               {rule.trigger_type === "cumpleanos"
                 ? "Cumpleaños"
-                : `${rule.days_after} días después de la venta`}
+                : rule.trigger_type === "despues_de_contacto"
+                  ? `${rule.days_after} días después del primer contacto`
+                  : `${rule.days_after} días después de la venta`}
             </Badge>
             {!rule.active && <Badge variant="neutral">Inactiva</Badge>}
           </div>

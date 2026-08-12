@@ -11,6 +11,7 @@ export interface ProspectCardData {
   type: ProspectType;
   status: ProspectStatus;
   note: string | null;
+  firstContactDate: string | null;
   // Próxima cita pendiente (la más cercana), si tiene alguna agendada.
   nextAppointment: string | null;
 }
@@ -55,6 +56,10 @@ export function ProspectCard({ prospect }: { prospect: ProspectCardData }) {
         <p className="text-xs text-ink/50">{prospect.phone ?? "Sin teléfono"}</p>
         <WhatsAppButton phone={prospect.phone} className="relative z-10 h-5 w-5" />
       </div>
+
+      {prospect.firstContactDate && (
+        <p className="mt-1 text-xs text-ink/50">Primer contacto: {formatDate(prospect.firstContactDate)}</p>
+      )}
 
       {/* Solo si hay observación cargada — mismo criterio que las notas
           de Clientes: nada de placeholder ensuciando la tarjeta. */}

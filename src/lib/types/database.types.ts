@@ -23,14 +23,14 @@ export type StockMovementType =
   | "apartado_cancelado"
   | "ajuste_venta"
   | "uso_personal";
-export type OrderStatus = "pendiente" | "recibido";
+export type OrderStatus = "pendiente" | "recibido" | "cancelado";
 export type LoanStatus = "pendiente" | "devuelto" | "vendido";
 export type LoanValuationType = "costo" | "pvp" | "promocion";
 export type LoanSettlementMethod = "efectivo" | "transferencia" | "producto";
 export type ExpenseCategory = "envio" | "empaque" | "publicidad" | "otro";
 export type PaymentStatus = "pagado" | "con_abonos" | "completado" | "cancelado";
 export type AuthorizedEmailStatus = "pendiente" | "activo" | "revocado";
-export type FollowUpTriggerType = "despues_de_venta" | "cumpleanos";
+export type FollowUpTriggerType = "despues_de_venta" | "cumpleanos" | "despues_de_contacto";
 export type FollowUpTaskStatus = "pendiente" | "hecho" | "omitido";
 export type PaymentMethod = "efectivo" | "transferencia";
 export type ProspectType = "ingreso" | "venta";
@@ -184,6 +184,7 @@ export interface Database {
           status: OrderStatus;
           order_date: string;
           received_at: string | null;
+          cancelled_at: string | null;
           total_cost: number;
           created_by: string | null;
           created_at: string;
@@ -251,7 +252,11 @@ export interface Database {
       follow_up_tasks: {
         Row: {
           id: string;
-          customer_id: string;
+          // Exactamente uno de los dos está seteado (constraint
+          // follow_up_tasks_customer_xor_prospect_check) — una tarea es
+          // de una clienta o de un prospecto, nunca ninguno ni los dos.
+          customer_id: string | null;
+          prospect_id: string | null;
           rule_id: string;
           due_date: string;
           status: FollowUpTaskStatus;
@@ -262,7 +267,6 @@ export interface Database {
           completed_by: string | null;
         };
         Insert: Partial<Database["public"]["Tables"]["follow_up_tasks"]["Row"]> & {
-          customer_id: string;
           rule_id: string;
           due_date: string;
           message_preview: string;
@@ -278,6 +282,7 @@ export interface Database {
           type: ProspectType;
           note: string | null;
           status: ProspectStatus;
+          first_contact_date: string | null;
           created_by: string | null;
           created_at: string;
         };
@@ -494,6 +499,10 @@ export interface Database {
         Args: { p_order_id: string };
         Returns: void;
       };
+      cancel_order: {
+        Args: { p_order_id: string };
+        Returns: void;
+      };
       create_order: {
         Args: {
           p_order_date: string;
@@ -624,6 +633,10 @@ export interface Database {
       };
       run_birthday_check: {
         Args: Record<string, never>;
+        Returns: void;
+      };
+      create_follow_up_tasks_for_prospect: {
+        Args: { p_prospect_id: string; p_first_contact_date: string | null };
         Returns: void;
       };
       update_sale_items: {

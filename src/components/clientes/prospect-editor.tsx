@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pencil } from "lucide-react";
 import { ProspectForm } from "./prospect-form";
 import { updateProspect } from "@/app/(app)/clientes/prospectos/actions";
+import { formatDate } from "@/lib/utils/date";
 import type { ProspectType } from "@/lib/types/database.types";
 
 // Ver/editar los datos del prospecto en la misma ficha — mismo patrón
@@ -15,12 +16,14 @@ export function ProspectEditor({
   phone,
   type,
   note,
+  firstContactDate,
 }: {
   prospectId: string;
   name: string;
   phone: string | null;
   type: ProspectType;
   note: string | null;
+  firstContactDate: string | null;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -28,7 +31,7 @@ export function ProspectEditor({
     return (
       <ProspectForm
         action={(formData) => updateProspect(prospectId, formData)}
-        defaults={{ name, phone, type, note }}
+        defaults={{ name, phone, type, note, firstContactDate }}
         submitLabel="Guardar cambios"
         onCancel={() => setEditing(false)}
         onSuccess={() => setEditing(false)}
@@ -41,6 +44,9 @@ export function ProspectEditor({
       <div>
         <p className="font-medium text-ink">{name}</p>
         <p className="mt-0.5 text-sm text-ink/60">{phone ?? "Sin teléfono"}</p>
+        {firstContactDate && (
+          <p className="mt-0.5 text-sm text-ink/60">Primer contacto: {formatDate(firstContactDate)}</p>
+        )}
         {note && <p className="mt-2 text-sm text-ink/70">{note}</p>}
       </div>
       <button

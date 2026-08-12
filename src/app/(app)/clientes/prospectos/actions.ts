@@ -18,6 +18,7 @@ function parseProspectForm(
     phone: formData.get("phone"),
     type: formData.get("type"),
     note: formData.get("note"),
+    first_contact_date: formData.get("first_contact_date"),
   });
 
   if (!parsed.success) {
@@ -34,17 +35,35 @@ export async function createProspect(formData: FormData): Promise<{ error?: stri
   const parsed = parseProspectForm(formData);
   if (!parsed.ok) return { error: parsed.error };
 
-  const { error } = await supabase.from("prospects").insert({
-    name: parsed.data.name,
-    phone: parsed.data.phone || null,
-    type: parsed.data.type,
-    note: parsed.data.note || null,
-    created_by: profile.id,
-  });
+  const firstContactDate = parsed.data.first_contact_date || null;
+
+  const { data: prospect, error } = await supabase
+    .from("prospects")
+    .insert({
+      name: parsed.data.name,
+      phone: parsed.data.phone || null,
+      type: parsed.data.type,
+      note: parsed.data.note || null,
+      first_contact_date: firstContactDate,
+      created_by: profile.id,
+    })
+    .select("id")
+    .single();
 
   if (error) return { error: error.message };
 
+  // Genera las tareas de las reglas 'despues_de_contacto' si ya se
+  // cargó la fecha de primer contacto — no hace nada si vino vacía (ver
+  // create_follow_up_tasks_for_prospect).
+  await supabase.rpc("create_follow_up_tasks_for_prospect", {
+    p_prospect_id: prospect.id,
+    p_first_contact_date: firstContactDate,
+  });
+
   revalidatePath("/clientes/prospectos");
+  revalidatePath("/clientes");
+  revalidatePath("/clientes/calendario");
+  revalidatePath("/");
   return {};
 }
 
@@ -55,6 +74,8 @@ export async function updateProspect(prospectId: string, formData: FormData): Pr
   const parsed = parseProspectForm(formData);
   if (!parsed.ok) return { error: parsed.error };
 
+  const firstContactDate = parsed.data.first_contact_date || null;
+
   const { error } = await supabase
     .from("prospects")
     .update({
@@ -62,12 +83,24 @@ export async function updateProspect(prospectId: string, formData: FormData): Pr
       phone: parsed.data.phone || null,
       type: parsed.data.type,
       note: parsed.data.note || null,
+      first_contact_date: firstContactDate,
     })
     .eq("id", prospectId);
 
   if (error) return { error: error.message };
 
+  // Igual que en el alta: si ya hay first_contact_date, genera las
+  // tareas que falten (el guard "not exists" de la función evita
+  // duplicar si esto se llama de nuevo en una edición posterior).
+  await supabase.rpc("create_follow_up_tasks_for_prospect", {
+    p_prospect_id: prospectId,
+    p_first_contact_date: firstContactDate,
+  });
+
   revalidatePath("/clientes/prospectos");
+  revalidatePath("/clientes");
+  revalidatePath("/clientes/calendario");
+  revalidatePath("/");
   return {};
 }
 

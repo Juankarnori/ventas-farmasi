@@ -14,7 +14,8 @@ export interface FollowUpRuleDefaults {
 }
 
 // Formulario de alta/edición de una regla. `trigger_type` controla si se
-// pide "días después" (solo tiene sentido para 'despues_de_venta' — un
+// pide "días después" (tiene sentido para 'despues_de_venta' y
+// 'despues_de_contacto' — las dos cuentan desde una fecha base; un
 // cumpleaños ya trae su propio "día" en la fecha de nacimiento).
 export function FollowUpRuleForm({
   action,
@@ -74,12 +75,13 @@ export function FollowUpRuleForm({
             value={triggerType}
             onChange={(e) => setTriggerType(e.target.value as FollowUpTriggerType)}
           >
-            <option value="despues_de_venta">Después de una venta</option>
-            <option value="cumpleanos">En el cumpleaños de la clienta</option>
+            <option value="despues_de_venta">Después de una venta (Ventas)</option>
+            <option value="cumpleanos">En el cumpleaños de la clienta (Ventas)</option>
+            <option value="despues_de_contacto">Después del primer contacto (Prospectos)</option>
           </Select>
         </div>
 
-        {triggerType === "despues_de_venta" && (
+        {triggerType !== "cumpleanos" && (
           <div className="w-40">
             <Label htmlFor="days_after">Días después</Label>
             <Input
@@ -105,14 +107,23 @@ export function FollowUpRuleForm({
           placeholder="Ej: Hola {nombre}! Quería preguntarte cómo te fue con {productos} 💛"
           required
         />
-        <p className="mt-1 text-xs text-ink/50">
-          Podés usar <code className="rounded bg-panel/60 px-1">{"{nombre}"}</code> y{" "}
-          <code className="rounded bg-panel/60 px-1">{"{productos}"}</code> — se reemplazan solos al
-          generar cada mensaje. Si la venta tuvo más de un producto, se listan todos (ej. &quot;Reviving
-          Shampoo y Reviving Aceite Capilar&quot;).{" "}
-          <code className="rounded bg-panel/60 px-1">{"{producto}"}</code> (singular) también funciona,
-          por si ya tenías reglas guardadas así.
-        </p>
+        {triggerType === "despues_de_contacto" ? (
+          <p className="mt-1 text-xs text-ink/50">
+            Podés usar <code className="rounded bg-panel/60 px-1">{"{nombre}"}</code> — se reemplaza
+            solo por el nombre del prospecto al generar cada mensaje. Acá no aplican{" "}
+            <code className="rounded bg-panel/60 px-1">{"{productos}"}</code>, un prospecto todavía no
+            compró nada.
+          </p>
+        ) : (
+          <p className="mt-1 text-xs text-ink/50">
+            Podés usar <code className="rounded bg-panel/60 px-1">{"{nombre}"}</code> y{" "}
+            <code className="rounded bg-panel/60 px-1">{"{productos}"}</code> — se reemplazan solos al
+            generar cada mensaje. Si la venta tuvo más de un producto, se listan todos (ej. &quot;Reviving
+            Shampoo y Reviving Aceite Capilar&quot;).{" "}
+            <code className="rounded bg-panel/60 px-1">{"{producto}"}</code> (singular) también funciona,
+            por si ya tenías reglas guardadas así.
+          </p>
+        )}
       </div>
 
       {error && <p className="rounded-md bg-accent/20 px-2 py-1 text-xs text-ink">{error}</p>}

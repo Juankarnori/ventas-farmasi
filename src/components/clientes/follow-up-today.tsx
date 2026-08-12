@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { UserPlus } from "lucide-react";
 import { Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { WhatsAppButton } from "@/components/shared/whatsapp-button";
 import { formatDate } from "@/lib/utils/date";
 import { completeFollowUpTask } from "@/app/(app)/clientes/actions";
@@ -14,9 +16,10 @@ import type { PendingFollowUp } from "@/lib/queries/pending-follow-ups";
 export type FollowUpTaskData = PendingFollowUp;
 
 // "Hoy toca contactar": tareas pendientes con due_date <= hoy (incluye
-// atrasadas). El mensaje es editable antes de mandarlo — nunca se envía
-// solo, WhatsApp no lo permite sin la API de negocios de Meta; acá se
-// arma el texto y la usuaria da el clic final desde su propio WhatsApp.
+// atrasadas), tanto de Clientes como de Prospectos. El mensaje es
+// editable antes de mandarlo — nunca se envía solo, WhatsApp no lo
+// permite sin la API de negocios de Meta; acá se arma el texto y la
+// usuaria da el clic final desde su propio WhatsApp.
 export function FollowUpToday({ tasks: initialTasks }: { tasks: FollowUpTaskData[] }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [messages, setMessages] = useState<Record<string, string>>(() =>
@@ -44,8 +47,8 @@ export function FollowUpToday({ tasks: initialTasks }: { tasks: FollowUpTaskData
       <div>
         <h2 className="font-display text-lg text-ink">Hoy toca contactar</h2>
         <p className="text-xs text-ink/60">
-          {tasks.length} clienta{tasks.length === 1 ? "" : "s"} — el mensaje ya está armado, revisalo y
-          mandalo por WhatsApp.
+          {tasks.length} contacto{tasks.length === 1 ? "" : "s"} — el mensaje ya está armado, revisalo
+          y mandalo por WhatsApp.
         </p>
       </div>
 
@@ -62,7 +65,16 @@ export function FollowUpToday({ tasks: initialTasks }: { tasks: FollowUpTaskData
               className="flex flex-col gap-2 rounded-xl border border-gold/20 bg-surface p-3"
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="font-medium text-ink">{task.customerName}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="font-medium text-ink">{task.contactName}</p>
+                  {/* Distingue de un vistazo si esto es un prospecto (no
+                      compró todavía) o una clienta ya conocida. */}
+                  {task.isProspect && (
+                    <Badge variant="accent" className="gap-1">
+                      <UserPlus className="h-3 w-3" /> Prospecto
+                    </Badge>
+                  )}
+                </div>
                 <span className="whitespace-nowrap text-[11px] text-ink/50">
                   Vence {formatDate(task.dueDate)}
                 </span>
@@ -75,12 +87,12 @@ export function FollowUpToday({ tasks: initialTasks }: { tasks: FollowUpTaskData
                 className="text-xs"
               />
 
-              {!task.customerPhone && (
+              {!task.contactPhone && (
                 <p className="text-[11px] text-ink/50">Sin teléfono — no se puede abrir WhatsApp.</p>
               )}
 
               <div className="flex items-center justify-between gap-2">
-                <WhatsAppButton phone={task.customerPhone} message={messages[task.id]} />
+                <WhatsAppButton phone={task.contactPhone} message={messages[task.id]} />
                 <div className="flex gap-1.5">
                   <Button
                     type="button"

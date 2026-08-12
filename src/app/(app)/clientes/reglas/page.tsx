@@ -21,7 +21,7 @@ export default async function ReglasDeSeguimientoPage() {
       <div>
         <h1 className="font-display text-3xl text-ink">Clientes</h1>
         <p className="mt-1 text-sm text-ink/60">
-          Reglas de seguimiento: cuándo y qué escribirle a una clienta.
+          Reglas de seguimiento: cuándo y qué escribirle a una clienta o a un prospecto.
         </p>
       </div>
 

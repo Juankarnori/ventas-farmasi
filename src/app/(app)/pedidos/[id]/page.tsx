@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ActionButton } from "@/components/ui/action-button";
 import { OrderStatusBadge } from "@/components/pedidos/order-status-badge";
+import { CancelOrderButton } from "@/components/pedidos/cancel-order-button";
 import { OrderEditPanel, type OrderDisplayRow } from "@/components/pedidos/order-edit-panel";
 import type { OrderItemDefault } from "@/components/pedidos/order-items-editor";
 import { formatDate } from "@/lib/utils/date";
@@ -96,9 +97,12 @@ export default async function PedidoDetallePage({
           </div>
         </div>
         {order.status === "pendiente" && (
-          <ActionButton action={markReceivedWithId}>
-            <CheckCircle2 className="h-4 w-4" /> Marcar como recibido
-          </ActionButton>
+          <div className="flex flex-wrap gap-2">
+            <ActionButton action={markReceivedWithId}>
+              <CheckCircle2 className="h-4 w-4" /> Marcar como recibido
+            </ActionButton>
+            <CancelOrderButton orderId={id} />
+          </div>
         )}
       </div>
 

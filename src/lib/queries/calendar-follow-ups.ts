@@ -6,9 +6,13 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 export interface CalendarFollowUpEntry {
   id: string;
   day: number; // 1-31, día del due_date dentro del mes pedido
-  customerId: string;
-  customerName: string;
-  customerPhone: string | null;
+  // true = tarea de un prospecto (regla 'despues_de_contacto'), igual
+  // criterio que getPendingFollowUps — nunca hay customerId Y
+  // prospectId a la vez.
+  isProspect: boolean;
+  contactId: string;
+  contactName: string;
+  contactPhone: string | null;
   dueDate: string;
   messagePreview: string;
   status: FollowUpTaskStatus;
@@ -47,7 +51,7 @@ export async function getCalendarMonthData(
   const [{ data: tasks }, { data: undelivered }] = await Promise.all([
     supabase
       .from("follow_up_tasks")
-      .select("id, customer_id, due_date, status, sale_id, message_preview")
+      .select("id, customer_id, prospect_id, due_date, status, sale_id, message_preview")
       .gte("due_date", from)
       .lte("due_date", to)
       .order("due_date", { ascending: true }),
@@ -56,24 +60,36 @@ export async function getCalendarMonthData(
 
   const undeliveredSaleIds = new Set((undelivered ?? []).map((r) => r.sale_id));
 
-  const taskCustomerIds = [...new Set((tasks ?? []).map((t) => t.customer_id))];
-  const { data: taskCustomers } =
+  const taskCustomerIds = [...new Set((tasks ?? []).filter((t) => t.customer_id).map((t) => t.customer_id as string))];
+  const taskProspectIds = [...new Set((tasks ?? []).filter((t) => t.prospect_id).map((t) => t.prospect_id as string))];
+  const [{ data: taskCustomers }, { data: taskProspects }] = await Promise.all([
     taskCustomerIds.length > 0
-      ? await supabase.from("customers").select("id, name, phone").in("id", taskCustomerIds)
-      : { data: [] };
+      ? supabase.from("customers").select("id, name, phone").in("id", taskCustomerIds)
+      : Promise.resolve({ data: [] }),
+    taskProspectIds.length > 0
+      ? supabase.from("prospects").select("id, name, phone").in("id", taskProspectIds)
+      : Promise.resolve({ data: [] }),
+  ]);
   const customerById = new Map((taskCustomers ?? []).map((c) => [c.id, c]));
+  const prospectById = new Map((taskProspects ?? []).map((p) => [p.id, p]));
 
-  const followUps: CalendarFollowUpEntry[] = (tasks ?? []).map((t) => ({
-    id: t.id,
-    day: Number(t.due_date.slice(8, 10)),
-    customerId: t.customer_id,
-    customerName: customerById.get(t.customer_id)?.name ?? "—",
-    customerPhone: customerById.get(t.customer_id)?.phone ?? null,
-    dueDate: t.due_date,
-    messagePreview: t.message_preview,
-    status: t.status,
-    hiddenByDelivery: t.status === "pendiente" && t.sale_id !== null && undeliveredSaleIds.has(t.sale_id),
-  }));
+  const followUps: CalendarFollowUpEntry[] = (tasks ?? []).map((t) => {
+    const isProspect = t.prospect_id !== null;
+    const contact = isProspect ? prospectById.get(t.prospect_id as string) : customerById.get(t.customer_id as string);
+
+    return {
+      id: t.id,
+      day: Number(t.due_date.slice(8, 10)),
+      isProspect,
+      contactId: (isProspect ? t.prospect_id : t.customer_id) as string,
+      contactName: contact?.name ?? "—",
+      contactPhone: contact?.phone ?? null,
+      dueDate: t.due_date,
+      messagePreview: t.message_preview,
+      status: t.status,
+      hiddenByDelivery: t.status === "pendiente" && t.sale_id !== null && undeliveredSaleIds.has(t.sale_id),
+    };
+  });
 
   // Cumpleaños del mes: se calcula del lado de acá (mes/día de
   // birth_date, sin importar el año) en vez de leer las follow_up_tasks

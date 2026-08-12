@@ -55,7 +55,13 @@ export default async function PedidosPage() {
               </Thead>
               <Tbody>
                 {orders.map((order) => (
-                  <Tr key={order.id}>
+                  // Los cancelados se muestran atenuados en vez de
+                  // ocultarse: a diferencia de Apartados (donde ocultar
+                  // los resueltos despeja una lista de pendientes por
+                  // hacer), Pedidos es un registro histórico de compras a
+                  // Farmasi — sirve seguir viéndolos acá para saber qué se
+                  // canceló y cuándo, sin tener que ir a buscarlos aparte.
+                  <Tr key={order.id} className={order.status === "cancelado" ? "opacity-50" : undefined}>
                     <Td className="pl-5">
                       <Link href={`/pedidos/${order.id}`} className="hover:text-primary">
                         {formatDate(order.order_date)}
