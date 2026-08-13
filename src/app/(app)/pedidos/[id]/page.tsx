@@ -110,6 +110,8 @@ export default async function PedidoDetallePage({
         isPending={order.status === "pendiente"}
         displayRows={displayRows}
         totalCost={order.total_cost}
+        farmasiOrderNumber={order.farmasi_order_number}
+        giftCardAmount={order.gift_card_amount}
         defaultItems={defaultItems}
         products={orderableProducts}
         categories={categories ?? []}

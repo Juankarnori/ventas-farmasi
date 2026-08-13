@@ -11,6 +11,8 @@ export async function createOrder(formData: FormData) {
 
   const orderDate = String(formData.get("order_date") ?? "");
   const itemsRaw = String(formData.get("items") ?? "[]");
+  const farmasiOrderNumber = String(formData.get("farmasi_order_number") ?? "").trim() || null;
+  const giftCardAmount = Number(formData.get("gift_card_amount") ?? 0) || 0;
 
   let items: unknown;
   try {
@@ -26,6 +28,8 @@ export async function createOrder(formData: FormData) {
   const { data: orderId, error } = await supabase.rpc("create_order", {
     p_order_date: orderDate,
     p_items: items,
+    p_farmasi_order_number: farmasiOrderNumber,
+    p_gift_card_amount: giftCardAmount,
   });
 
   if (error) {
@@ -128,9 +132,23 @@ export async function updateOrder(orderId: string, formData: FormData): Promise<
 
   const totalCost = parsedItems.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
 
+  const farmasiOrderNumber = String(formData.get("farmasi_order_number") ?? "").trim() || null;
+  const giftCardAmount = Number(formData.get("gift_card_amount") ?? 0) || 0;
+
+  if (giftCardAmount < 0) {
+    return { error: "El bono no puede ser negativo" };
+  }
+  if (giftCardAmount > totalCost) {
+    return { error: "El bono no puede ser mayor al total del pedido" };
+  }
+
   const { error: updateError } = await supabase
     .from("orders")
-    .update({ total_cost: totalCost })
+    .update({
+      total_cost: totalCost,
+      farmasi_order_number: farmasiOrderNumber,
+      gift_card_amount: giftCardAmount,
+    })
     .eq("id", orderId);
 
   if (updateError) {

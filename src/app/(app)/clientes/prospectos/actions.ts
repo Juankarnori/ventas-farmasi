@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
 import { prospectSchema, prospectAppointmentSchema, type ProspectInput } from "@/lib/validations/prospect";
+import { ecuadorDatetimeLocalToUTC } from "@/lib/utils/date";
 
 // Todas las acciones de este archivo devuelven { error? } en vez de tirar
 // una excepción — en producción, Next.js oculta el mensaje real de
@@ -169,7 +170,11 @@ export async function createAppointment(prospectId: string, formData: FormData):
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
 
-  const scheduledAt = new Date(parsed.data.scheduled_at);
+  // El <input type="datetime-local"> manda un string sin timezone (ej.
+  // "2026-08-12T14:30") — `new Date(...)` directo lo interpretaría como
+  // hora del SERVIDOR (Vercel = UTC), corriendo la cita ~5 horas de la
+  // hora real que se eligió en Ecuador. Ver ecuadorDatetimeLocalToUTC.
+  const scheduledAt = ecuadorDatetimeLocalToUTC(parsed.data.scheduled_at);
   if (Number.isNaN(scheduledAt.getTime())) {
     return { error: "Fecha y hora inválidas" };
   }

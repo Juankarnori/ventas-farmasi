@@ -186,6 +186,12 @@ export interface Database {
           received_at: string | null;
           cancelled_at: string | null;
           total_cost: number;
+          // N° de referencia que da Farmasi a esta compra (opcional) y
+          // cuánto de tarjeta de regalo/bono se aplicó — "total a pagar"
+          // (total_cost - gift_card_amount) se calcula en la UI, no se
+          // guarda aparte.
+          farmasi_order_number: string | null;
+          gift_card_amount: number;
           created_by: string | null;
           created_at: string;
         };
@@ -512,6 +518,8 @@ export interface Database {
         Args: {
           p_order_date: string;
           p_items: { variant_id: string; quantity: number; unit_cost: number }[];
+          p_farmasi_order_number?: string | null;
+          p_gift_card_amount?: number;
         };
         Returns: string;
       };

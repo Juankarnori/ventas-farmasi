@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -49,11 +49,17 @@ export function OrderItemsEditor({
   categories,
   lines,
   defaultItems,
+  onTotalChange,
 }: {
   products: OrderableProduct[];
   categories: { id: string; name: string }[];
   lines: { id: string; name: string; category_id: string }[];
   defaultItems?: OrderItemDefault[];
+  // Para que el formulario que envuelve esto (OrderForm/OrderEditPanel)
+  // pueda mostrar "Total − Bono = Total a pagar" en vivo — el total de
+  // productos vive acá adentro (rows es estado interno), así que hace
+  // falta este callback para levantarlo hacia arriba.
+  onTotalChange?: (total: number) => void;
 }) {
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
 
@@ -141,10 +147,21 @@ export function OrderItemsEditor({
 
   // Atajo de "agregar por código": si esa variante ya está en la lista,
   // suma 1 en vez de duplicar la fila.
+  //
+  // Limpia la búsqueda de texto al agregar: el código puede corresponder
+  // a un producto que no matchea lo que hubiera quedado tipeado en el
+  // filtro de arriba (son dos campos independientes) — si se dejara la
+  // búsqueda tal cual, `optionsFor` no incluye ese producto entre las
+  // opciones filtradas (a propósito, ver el fix de esa misma función) y
+  // el <select> del renglón recién agregado quedaría mostrando cualquier
+  // otra cosa en vez del producto real, como si "no hubiera agregado
+  // nada".
   function onQuickAdd(productId: string, variantId: string) {
     const product = productById.get(productId);
     const variant = product?.variants.find((v) => v.id === variantId);
     if (!product || !variant) return;
+
+    setQuery("");
 
     const existing = rows.find((r) => r.variant_id === variantId);
     if (existing) {
@@ -160,6 +177,10 @@ export function OrderItemsEditor({
   }
 
   const total = rows.reduce((sum, r) => sum + r.quantity * r.unit_cost, 0);
+
+  useEffect(() => {
+    onTotalChange?.(total);
+  }, [total, onTotalChange]);
 
   const itemsJson = JSON.stringify(
     rows
@@ -246,6 +267,14 @@ export function OrderItemsEditor({
             >
               <Trash2 className="h-4 w-4" />
             </button>
+            {/* Mismo patrón que Préstamos: precio unitario × cantidad en
+                vivo, para no tener que calcularlo a mano renglón por
+                renglón. */}
+            <p className="w-full text-xs text-ink/50">
+              Costo unitario: {formatCurrency(row.unit_cost)} · Total:{" "}
+              {formatCurrency(row.unit_cost * row.quantity)} ({row.quantity} unidad
+              {row.quantity === 1 ? "" : "es"})
+            </p>
           </div>
         );
       })}

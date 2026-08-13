@@ -13,7 +13,7 @@ import type { LoanableProduct } from "@/components/prestamos/loan-form";
 import { variantLabel } from "@/lib/utils/variant-label";
 import { formatDate } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/currency";
-import { loanDebtAmount } from "@/lib/utils/loan-debt";
+import { loanDebtAmount, loanDisplayAmount } from "@/lib/utils/loan-debt";
 import { updateLoan, updateLoanSettlement } from "../actions";
 
 const STATUS_LABEL = {
@@ -98,7 +98,13 @@ export default async function PrestamoDetallePage({
 
   const updateAction = updateLoan.bind(null, loan.id);
   const settlementAction = updateLoanSettlement.bind(null, loan.id);
-  const debtAmount = loanDebtAmount(loan);
+  // Estimado (unit_value × quantity) — sigue siendo la sugerencia por
+  // defecto del campo "Monto pagado" antes de que se registre un número
+  // real. Para lo que se MUESTRA como "le debe a X", en cambio, una vez
+  // que ya se registró de verdad cómo se pagó, ese es el número real (ver
+  // loanDisplayAmount / 0047_loan_settlement_fixes.sql).
+  const suggestedAmount = loanDebtAmount(loan);
+  const debtAmount = loanDisplayAmount(loan);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -171,7 +177,7 @@ export default async function PrestamoDetallePage({
             settlementMethod={loan.settlement_method}
             settlementAmount={loan.settlement_amount}
             settlementBankNote={loan.settlement_bank_note}
-            suggestedAmount={debtAmount}
+            suggestedAmount={suggestedAmount}
             action={settlementAction}
           />
         </>

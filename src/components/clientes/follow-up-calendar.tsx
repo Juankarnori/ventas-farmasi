@@ -8,7 +8,7 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isSameMonth,
-  isToday,
+  isSameDay,
   format,
   getDate,
 } from "date-fns";
@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/input";
 import { WhatsAppButton } from "@/components/shared/whatsapp-button";
 import { cn } from "@/lib/utils/cn";
+import { todayISO } from "@/lib/utils/date";
 import type { CalendarFollowUpEntry, CalendarBirthdayEntry } from "@/lib/queries/calendar-follow-ups";
 
 const STATUS_DOT: Record<CalendarFollowUpEntry["status"], string> = {
@@ -46,6 +47,12 @@ export function FollowUpCalendar({
 }) {
   const viewedMonth = new Date(year, month - 1, 1);
 
+  // "Hoy" en la hora de Ecuador, no la del entorno donde se renderiza
+  // (ver todayISO) — evita que el día resaltado/preseleccionado se corra
+  // durante la tarde/noche si esto llega a renderizarse en el servidor.
+  const [todayYear, todayMonthNum, todayDay] = todayISO().split("-").map(Number);
+  const todayDate = new Date(todayYear, todayMonthNum - 1, todayDay);
+
   const followUpsByDay = useMemo(() => {
     const map = new Map<number, CalendarFollowUpEntry[]>();
     for (const f of followUps) {
@@ -70,7 +77,7 @@ export function FollowUpCalendar({
   // día de hoy seleccionado (lo más probable que se quiera ver primero);
   // si es otro mes, arranca sin nada seleccionado.
   const [selectedDay, setSelectedDay] = useState<number | null>(() =>
-    isSameMonth(viewedMonth, new Date()) ? new Date().getDate() : null,
+    isSameMonth(viewedMonth, todayDate) ? todayDate.getDate() : null,
   );
 
   const gridStart = startOfWeek(startOfMonth(viewedMonth), { weekStartsOn: 1 });
@@ -114,7 +121,7 @@ export function FollowUpCalendar({
                   !inMonth && "text-ink/20",
                   inMonth && !isSelected && "text-ink hover:bg-panel/40",
                   isSelected && "bg-primary text-background",
-                  isToday(day) && !isSelected && "font-semibold text-primary",
+                  isSameDay(day, todayDate) && !isSelected && "font-semibold text-primary",
                 )}
               >
                 <span>{dayNum}</span>

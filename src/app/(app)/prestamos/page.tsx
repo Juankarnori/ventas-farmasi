@@ -8,7 +8,7 @@ import { LoanList, type LoanRow } from "@/components/prestamos/loan-list";
 import { SaldoNetoCard, type PendingLoanForBalance } from "@/components/prestamos/saldo-neto-card";
 import { MonetaryDebtCard } from "@/components/prestamos/monetary-debt-card";
 import { variantLabel } from "@/lib/utils/variant-label";
-import { loanDebtAmount, loanUnitValue, type DebtEntry } from "@/lib/utils/loan-debt";
+import { loanDisplayAmount, loanUnitValue, type DebtEntry } from "@/lib/utils/loan-debt";
 
 export default async function PrestamosPage() {
   const supabase = await createClient();
@@ -45,7 +45,9 @@ export default async function PrestamosPage() {
       unitPrice: loan.unit_price,
       customPrice: loan.custom_price,
     }),
-    debtAmount: loanDebtAmount(loan),
+    // Una vez que se registró de verdad cómo se pagó, ESE monto es la
+    // fuente de verdad — no el estimado (ver loanDisplayAmount).
+    debtAmount: loanDisplayAmount(loan),
     debtSettled: loan.debt_settled_at !== null,
   }));
 
@@ -72,7 +74,7 @@ export default async function PrestamosPage() {
       fromName: profileById.get(l.from_profile_id)?.display_name ?? "—",
       toProfileId: l.to_profile_id,
       toName: profileById.get(l.to_profile_id)?.display_name ?? "—",
-      amount: loanDebtAmount(l),
+      amount: loanDisplayAmount(l),
     }));
 
   return (

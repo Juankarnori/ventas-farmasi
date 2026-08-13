@@ -40,6 +40,25 @@ export function loanDebtAmount(loan: {
   );
 }
 
+// Qué número mostrar como "lo que vale/debe" este préstamo: una vez que
+// se registró de verdad cómo se pagó (LoanSettlementEditor →
+// settlement_amount), ESE es el valor real y tiene que ganarle al
+// estimado — antes de esto, `loanDebtAmount` (unit_value × quantity) es
+// la mejor referencia disponible. Bug recurrente que esto corrige: editar
+// el pago de un préstamo nunca cambiaba lo que se veía como "Debe $X" en
+// ningún lado (tabla, ficha, tarjeta de eliminar) porque todo seguía
+// leyendo siempre el estimado — nunca el monto realmente registrado.
+export function loanDisplayAmount(loan: {
+  quantity: number;
+  unit_cost: number;
+  unit_price: number;
+  valuation_type: "costo" | "pvp" | "promocion";
+  custom_price: number | null;
+  settlement_amount: number | null;
+}): number {
+  return loan.settlement_amount ?? loanDebtAmount(loan);
+}
+
 export interface DebtEntry {
   fromProfileId: string; // acreedor: a quien le compraron el producto prestado
   fromName: string;

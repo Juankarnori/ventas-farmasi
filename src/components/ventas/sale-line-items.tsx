@@ -9,7 +9,6 @@ import { CategoryLineFilter } from "@/components/shared/category-line-filter";
 import { QuickAddByCode } from "@/components/shared/quick-add-by-code";
 import { filterProducts } from "@/lib/utils/product-search";
 import { BorrowStockDialog } from "./borrow-stock-dialog";
-import { CreateOrderLink } from "@/components/shared/create-order-link";
 
 export interface SellableVariant {
   id: string;
@@ -174,10 +173,21 @@ export function SaleLineItems({
 
   // Atajo de "agregar por código": si esa variante ya está en la lista,
   // suma 1 en vez de duplicar la fila.
+  //
+  // Limpia la búsqueda de texto al agregar: el código puede corresponder
+  // a un producto que no matchea lo que hubiera quedado tipeado en el
+  // filtro de arriba (son dos campos independientes) — si se dejara la
+  // búsqueda tal cual, `optionsFor` no incluye ese producto entre las
+  // opciones filtradas (a propósito, ver el fix de esa misma función) y
+  // el <select> del renglón recién agregado quedaría mostrando cualquier
+  // otra cosa en vez del producto real, como si "no hubiera agregado
+  // nada".
   function onQuickAdd(productId: string, variantId: string) {
     const product = productById.get(productId);
     const variant = product?.variants.find((v) => v.id === variantId);
     if (!product || !variant) return;
+
+    setQuery("");
 
     const existing = rows.find((r) => r.variant_id === variantId);
     if (existing) {
@@ -290,27 +300,18 @@ export function SaleLineItems({
                   stock propio de este color.
                 </p>
                 {/* Ya no bloquea la venta (ver create_sale/create_apartado en
-                    0046_pending_purchase.sql): si se completa igual sin pedir
-                    prestado ni ajustar la cantidad, la diferencia queda
-                    registrada como pendiente de comprar en este mismo
-                    renglón — se puede resolver ahora (pidiendo prestado) o
-                    más tarde (recibiendo un pedido de este producto). */}
-                <p className="mt-1 text-xs text-ink/50">
-                  Podés completar la venta igual — la diferencia queda pendiente de comprar.
-                </p>
+                    0046_pending_purchase.sql): completar la venta sin pedir
+                    prestado manda automáticamente la diferencia a
+                    "pendiente de comprar" (pestaña Comprar) — no hace falta
+                    ninguna acción manual acá, por eso ya no hay un botón
+                    "Crear pedido" en este punto del formulario (ese vive en
+                    la pestaña Comprar, donde sí corresponde iniciarlo). */}
                 {variant && variant.totalStock === 0 ? (
-                  <>
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink">
-                      <AlertTriangle className="h-3.5 w-3.5 text-accent" /> No hay stock de este
-                      producto en todo el negocio.
-                    </p>
-                    <CreateOrderLink
-                      productId={row.product_id}
-                      variantId={row.variant_id}
-                      quantity={row.quantity - (variant?.stock ?? 0)}
-                      className="mt-1.5"
-                    />
-                  </>
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink/50">
+                    <AlertTriangle className="h-3.5 w-3.5 text-accent" /> No hay stock de este
+                    producto en todo el negocio. Al registrar la venta, la diferencia queda pendiente
+                    de comprar.
+                  </p>
                 ) : (
                   <BorrowStockDialog
                     variantId={row.variant_id}

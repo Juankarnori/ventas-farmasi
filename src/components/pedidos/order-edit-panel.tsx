@@ -5,6 +5,7 @@ import { Pencil, X } from "lucide-react";
 import { Table, Thead, Tbody, Tr, Th, Td } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input, Label } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/utils/currency";
 import { OrderItemsEditor, type OrderableProduct, type OrderItemDefault } from "./order-items-editor";
@@ -20,19 +21,33 @@ export interface OrderDisplayRow {
 function ReadOnlyItems({
   displayRows,
   totalCost,
+  farmasiOrderNumber,
+  giftCardAmount,
   headerRight,
   footerNote,
 }: {
   displayRows: OrderDisplayRow[];
   totalCost: number;
+  farmasiOrderNumber: string | null;
+  giftCardAmount: number;
   headerRight?: React.ReactNode;
   footerNote?: React.ReactNode;
 }) {
   const totalUnits = displayRows.reduce((sum, r) => sum + r.quantity, 0);
+  const totalToPay = Math.max(0, totalCost - giftCardAmount);
 
   return (
     <Card className="mt-6 p-0">
-      {headerRight && <div className="flex justify-end px-5 pt-5">{headerRight}</div>}
+      {(farmasiOrderNumber || headerRight) && (
+        <div className="flex items-center justify-between gap-3 px-5 pt-5">
+          {farmasiOrderNumber ? (
+            <p className="text-xs text-ink/50">N° de orden Farmasi: {farmasiOrderNumber}</p>
+          ) : (
+            <span />
+          )}
+          {headerRight}
+        </div>
+      )}
       <Table>
         <Thead>
           <Tr>
@@ -53,12 +68,22 @@ function ReadOnlyItems({
           ))}
         </Tbody>
       </Table>
-      <p className="border-t border-ink/10 px-5 py-3 text-right text-sm text-ink/60">
-        {totalUnits} producto{totalUnits === 1 ? "" : "s"} · Total del pedido:{" "}
-        <span className="font-mono text-base tabular-nums text-ink">
-          {formatCurrency(totalCost)}
-        </span>
-      </p>
+      <div className="border-t border-ink/10 px-5 py-3 text-right text-sm text-ink/60">
+        <p>
+          {totalUnits} producto{totalUnits === 1 ? "" : "s"} · Total del pedido:{" "}
+          <span className="font-mono text-base tabular-nums text-ink">
+            {formatCurrency(totalCost)}
+          </span>
+        </p>
+        {giftCardAmount > 0 && (
+          <p className="mt-1">
+            Bono: −{formatCurrency(giftCardAmount)} · Total a pagar:{" "}
+            <span className="font-mono text-base tabular-nums font-semibold text-ink">
+              {formatCurrency(totalToPay)}
+            </span>
+          </p>
+        )}
+      </div>
       {footerNote && (
         <p className="border-t border-ink/10 px-5 py-3 text-xs text-ink/50">{footerNote}</p>
       )}
@@ -70,6 +95,8 @@ export function OrderEditPanel({
   isPending,
   displayRows,
   totalCost,
+  farmasiOrderNumber,
+  giftCardAmount,
   defaultItems,
   products,
   categories,
@@ -79,6 +106,8 @@ export function OrderEditPanel({
   isPending: boolean;
   displayRows: OrderDisplayRow[];
   totalCost: number;
+  farmasiOrderNumber: string | null;
+  giftCardAmount: number;
   defaultItems: OrderItemDefault[];
   products: OrderableProduct[];
   categories: { id: string; name: string }[];
@@ -91,6 +120,10 @@ export function OrderEditPanel({
   const [error, setError] = useState<string | null>(null);
   const pendingFormData = useRef<FormData | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [itemsTotal, setItemsTotal] = useState(totalCost);
+  const [giftCardInput, setGiftCardInput] = useState(giftCardAmount > 0 ? String(giftCardAmount) : "");
+  const giftCardNumber = Number(giftCardInput) || 0;
+  const totalToPay = Math.max(0, itemsTotal - giftCardNumber);
 
   // La Server Action devuelve { error? } en vez de tirar una excepción —
   // en producción, Next.js oculta el mensaje real de cualquier throw no
@@ -148,6 +181,8 @@ export function OrderEditPanel({
       <ReadOnlyItems
         displayRows={displayRows}
         totalCost={totalCost}
+        farmasiOrderNumber={farmasiOrderNumber}
+        giftCardAmount={giftCardAmount}
         footerNote="Ya fue recibido — no se puede editar. Si faltó o sobró algo, hacé un ajuste manual desde Inventario."
       />
     );
@@ -158,6 +193,8 @@ export function OrderEditPanel({
       <ReadOnlyItems
         displayRows={displayRows}
         totalCost={totalCost}
+        farmasiOrderNumber={farmasiOrderNumber}
+        giftCardAmount={giftCardAmount}
         headerRight={
           <button
             type="button"
@@ -175,12 +212,45 @@ export function OrderEditPanel({
     <>
       <Card className="mt-6">
         <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <Label htmlFor="farmasi_order_number">N° de orden Farmasi (opcional)</Label>
+            <Input
+              id="farmasi_order_number"
+              name="farmasi_order_number"
+              defaultValue={farmasiOrderNumber ?? ""}
+              placeholder="Ej: 123456789"
+            />
+          </div>
+
           <OrderItemsEditor
             products={products}
             categories={categories}
             lines={lines}
             defaultItems={defaultItems}
+            onTotalChange={setItemsTotal}
           />
+
+          <div className="w-48">
+            <Label htmlFor="gift_card_amount">Tarjeta de regalo / bono (opcional)</Label>
+            <Input
+              id="gift_card_amount"
+              name="gift_card_amount"
+              type="number"
+              min={0}
+              step="0.01"
+              value={giftCardInput}
+              onChange={(e) => setGiftCardInput(e.target.value)}
+              placeholder="0.00"
+            />
+          </div>
+
+          {giftCardNumber > 0 && (
+            <p className="text-sm text-ink/60">
+              Total: {formatCurrency(itemsTotal)} − Bono: {formatCurrency(giftCardNumber)} = Total a
+              pagar: <span className="font-semibold text-ink">{formatCurrency(totalToPay)}</span>
+            </p>
+          )}
+
           {error && <p className="rounded-md bg-accent/20 px-2 py-1 text-xs text-ink">{error}</p>}
           <div className="flex gap-2">
             <Button type="submit" disabled={busy}>
